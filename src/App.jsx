@@ -1123,6 +1123,30 @@ export default function DayBoard() {
     persistFood(foodEntries.filter((f) => f.id !== id));
   };
 
+  const updateFoodEntry = (id, patch) => {
+    const nextEntries = foodEntries.map((entry) => {
+      if (entry.id !== id) return entry;
+
+      const calories = numberFromInput(patch.calories);
+      const protein = numberFromInput(patch.protein);
+      const fat = numberFromInput(patch.fat);
+      const grams = String(patch.grams || "").trim();
+
+      return {
+        ...entry,
+        name: String(patch.name || entry.name || "").trim(),
+        grams,
+        calories: calories || null,
+        protein: protein || null,
+        fat: fat || null,
+        hasNutrition: Boolean(calories || protein || fat),
+        estimateNote: "נערך ידנית",
+      };
+    });
+
+    persistFood(nextEntries);
+  };
+
   // ---- food product library ----
   const persistLibrary = useCallback(async (next) => {
     setSavedFoods(next);
@@ -1441,6 +1465,7 @@ export default function DayBoard() {
             addFood={addFood}
             foodEntries={foodEntries}
             deleteFood={deleteFood}
+            updateFoodEntry={updateFoodEntry}
             totals={foodTotals}
             dailyCalorieGoal={dailyCalorieGoal}
             calorieGoalInput={calorieGoalInput}
@@ -2046,7 +2071,7 @@ async function detectBarcodeFromImage(file) {
 }
 
 function FoodView({
-  foodForm, setFoodForm, applyAutoFoodEstimate, addFood, foodEntries, deleteFood, totals,
+  foodForm, setFoodForm, applyAutoFoodEstimate, addFood, foodEntries, deleteFood, updateFoodEntry, totals,
   dailyCalorieGoal, calorieGoalInput, setCalorieGoalInput,
   isEditingCalorieGoal, setIsEditingCalorieGoal, saveDailyCalorieGoal,
   savedFoods, saveCurrentFoodToLibrary,
@@ -2310,27 +2335,14 @@ function FoodView({
     const nextName = String(editingFoodForm.name || "").trim();
     if (!nextName) return;
 
-    const nextEntries = foodEntries.map((entry) => {
-      if (entry.id !== id) return entry;
-
-      const calories = numberFromInput(editingFoodForm.calories);
-      const protein = numberFromInput(editingFoodForm.protein);
-      const fat = numberFromInput(editingFoodForm.fat);
-      const grams = String(editingFoodForm.grams || "").trim();
-
-      return {
-        ...entry,
-        name: nextName,
-        grams,
-        calories: calories || null,
-        protein: protein || null,
-        fat: fat || null,
-        hasNutrition: Boolean(calories || protein || fat),
-        estimateNote: "נערך ידנית",
-      };
+    updateFoodEntry(id, {
+      name: nextName,
+      grams: editingFoodForm.grams,
+      calories: editingFoodForm.calories,
+      protein: editingFoodForm.protein,
+      fat: editingFoodForm.fat,
     });
 
-    persistFood(nextEntries);
     cancelEditFoodEntry();
   };
 
