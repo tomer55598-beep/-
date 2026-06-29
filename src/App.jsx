@@ -2206,6 +2206,15 @@ function FoodView({
     }
   };
 
+
+  const photoResultReady = Boolean(foodForm.imageData && foodForm.name);
+  const photoResultNutrition = [
+    foodForm.grams ? `${foodForm.grams} גרם` : null,
+    foodForm.calories ? `${foodForm.calories} קל׳` : null,
+    foodForm.protein ? `${foodForm.protein} ג׳ חלבון` : null,
+    foodForm.fat ? `${foodForm.fat} ג׳ שומן` : null,
+  ].filter(Boolean).join(" · ");
+
   return (
     <div>
 
@@ -2552,6 +2561,73 @@ function FoodView({
           </>
         )}
       </Card>
+
+          {photoResultReady && (
+            <Card>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {foodForm.imageData && (
+                    <div
+                      style={{
+                        width: "52px",
+                        height: "52px",
+                        minWidth: "52px",
+                        maxWidth: "52px",
+                        borderRadius: "14px",
+                        overflow: "hidden",
+                        border: `1px solid ${palette.border}`,
+                        background: palette.bg,
+                        flexShrink: 0
+                      }}
+                    >
+                      <img
+                        src={foodForm.imageData}
+                        alt={foodForm.name}
+                        style={{
+                          width: "52px",
+                          height: "52px",
+                          maxWidth: "52px",
+                          maxHeight: "52px",
+                          objectFit: "cover",
+                          display: "block"
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate" style={{ color: palette.ink }}>
+                      {foodForm.name}
+                    </p>
+                    <p className="text-[11px] mt-0.5 leading-5" style={{ color: palette.mutedInk }}>
+                      {photoResultNutrition || "זוהה מתמונה — אפשר להשלים כמות/ערכים לפני הוספה."}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleAddFood("detailed")}
+                  className="rounded-xl px-3 py-2 text-sm font-medium flex-shrink-0"
+                  style={{ background: palette.foodAccent, color: "#fff" }}
+                >
+                  הוסף מהר
+                </button>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 mt-3">
+                <MiniInsight label="גרם" value={foodForm.grams || "—"} />
+                <MiniInsight label="קל׳" value={foodForm.calories || "—"} />
+                <MiniInsight label="חלבון" value={foodForm.protein ? `${foodForm.protein} ג׳` : "—"} />
+                <MiniInsight label="שומן" value={foodForm.fat ? `${foodForm.fat} ג׳` : "—"} />
+              </div>
+
+              <p className="text-[10px] mt-2" style={{ color: palette.mutedInk }}>
+                אפשר לערוך את הערכים דרך “אוכל” לפני הוספה אם הזיהוי לא מדויק.
+              </p>
+            </Card>
+          )}
+
 
 <Card>
         <button

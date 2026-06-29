@@ -481,3 +481,5 @@ input[type="file"] {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
+
+/* Photo result row uses inline sizing for iPhone/Safari stability. */
