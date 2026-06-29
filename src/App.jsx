@@ -1713,6 +1713,41 @@ function SmartTip({ text, good }) {
 }
 
 
+
+function SectionHeader({ icon: Icon, title, subtitle, accent = palette.foodAccent, action }) {
+  return (
+    <div className="section-hero rounded-3xl p-4 mb-4" style={{ border: `1px solid ${palette.border}` }}>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-xl font-semibold" style={{ color: palette.ink }}>{title}</h2>
+          {subtitle && <p className="text-xs mt-1 leading-5" style={{ color: palette.mutedInk }}>{subtitle}</p>}
+        </div>
+        <div className="rounded-2xl p-3 flex-shrink-0" style={{ background: palette.bg, color: accent }}>
+          <Icon size={22} />
+        </div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function ProgressCard({ label, value, sub, pct, accent, icon: Icon }) {
+  return (
+    <div className="rounded-2xl p-3" style={{ background: palette.surface, border: `1px solid ${palette.border}` }}>
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[11px]" style={{ color: palette.mutedInk }}>{label}</span>
+        {Icon && <Icon size={15} style={{ color: accent }} />}
+      </div>
+      <p className="text-lg font-semibold mt-1" style={{ color: palette.ink }}>{value}</p>
+      {sub && <p className="text-[10px] mt-0.5" style={{ color: palette.mutedInk }}>{sub}</p>}
+      <div className="h-1.5 rounded-full overflow-hidden mt-2" style={{ background: "#EFE7DB" }}>
+        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: accent }} />
+      </div>
+    </div>
+  );
+}
+
+
 function TasksView({
   tasks, newTaskText, setNewTaskText, newTaskPriority, setNewTaskPriority, taskFilter, setTaskFilter,
   addTask, toggleTask, updateTaskStatus, updateTaskStatusText, updateTaskPriority, deleteTask, clearDoneTasks,
@@ -2590,11 +2625,11 @@ function FoodView({
                 <button
                   type="button"
                   onClick={() => setSelectedFoodImage(f.imageData)}
-                  className="h-14 w-14 rounded-xl overflow-hidden flex-shrink-0"
-                  style={{ border: `1px solid ${palette.border}`, background: palette.bg }}
+                  className="rounded-xl overflow-hidden food-entry-photo"
+                  style={{ width: 56, height: 56, minWidth: 56, maxWidth: 56, flexShrink: 0, border: `1px solid ${palette.border}`, background: palette.bg }}
                   title="פתח תמונה"
                 >
-                  <img src={f.imageData} alt={f.name} className="w-full h-full object-cover" />
+                  <img src={f.imageData} alt={f.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                 </button>
               ) : null}
               <div className="flex-1">
@@ -2893,8 +2928,8 @@ function ProductLibraryModal({
               {visibleSavedFoods.map((p) => (
                 <div key={p.id} className="flex items-center gap-2 rounded-xl px-3 py-2 list-row" style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
                   {p.imageData ? (
-                    <div className="h-11 w-11 rounded-lg overflow-hidden flex-shrink-0" style={{ border: `1px solid ${palette.border}` }}>
-                      <img src={p.imageData} alt={p.name} className="w-full h-full object-cover" />
+                    <div className="rounded-lg overflow-hidden product-entry-photo" style={{ width: 44, height: 44, minWidth: 44, flexShrink: 0, border: `1px solid ${palette.border}` }}>
+                      <img src={p.imageData} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                     </div>
                   ) : null}
                   <div className="flex-1 min-w-0">
@@ -2998,6 +3033,13 @@ function HistoryView({ historyRows }) {
 function WaterView({ totalWater, waterPct, waterGoalReached, dailyWaterGoal, waterGoalInput, setWaterGoalInput, isEditingWaterGoal, setIsEditingWaterGoal, saveDailyWaterGoal, addWater, customWater, setCustomWater, waterEntries, removeWaterEntry }) {
   return (
     <div>
+      <SectionHeader
+        icon={Droplets}
+        title="מעקב מים"
+        subtitle="יעד יומי אישי, הוספות מהירות והיסטוריית שתייה של היום."
+        accent={palette.waterAccent}
+      />
+
       <Card>
         <div className="flex items-center gap-5">
           <div
@@ -3142,6 +3184,13 @@ function WeightView({ weightEntries, weightDate, setWeightDate, weightValue, set
 
   return (
     <div>
+      <SectionHeader
+        icon={Scale}
+        title="משקל גוף"
+        subtitle="מעקב שקילות, שינוי מהשקילה הקודמת, BMI ומגמה לאורך זמן."
+        accent={palette.weightAccent}
+      />
+
       <Card>
         {latest ? (
           <div className="flex items-center gap-5">
