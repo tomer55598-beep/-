@@ -2596,51 +2596,69 @@ function FoodView({
                     </button>
                   </div>
 
-                  <input
-                    value={editingFoodForm.name}
-                    onChange={(e) => setEditingFoodForm({ ...editingFoodForm, name: e.target.value })}
-                    placeholder="שם המאכל"
-                    className="w-full rounded-xl px-3 py-2 outline-none"
-                    style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
-                  />
+                  <label className="block">
+                    <span className="block text-[11px] mb-1" style={{ color: palette.mutedInk }}>שם המאכל</span>
+                    <input
+                      value={editingFoodForm.name}
+                      onChange={(e) => setEditingFoodForm({ ...editingFoodForm, name: e.target.value })}
+                      placeholder="שם המאכל"
+                      className="w-full rounded-xl px-3 py-2 outline-none"
+                      style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+                    />
+                  </label>
 
                   <div className="grid grid-cols-2 gap-2">
-                    <input
-                      value={editingFoodForm.grams}
-                      onChange={(e) => setEditingFoodForm({ ...editingFoodForm, grams: e.target.value })}
-                      placeholder="גרמים"
-                      type="number"
-                      inputMode="decimal"
-                      className="rounded-xl px-3 py-2 outline-none min-w-0"
-                      style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
-                    />
-                    <input
-                      value={editingFoodForm.calories}
-                      onChange={(e) => setEditingFoodForm({ ...editingFoodForm, calories: e.target.value })}
-                      placeholder="קלוריות"
-                      type="number"
-                      inputMode="decimal"
-                      className="rounded-xl px-3 py-2 outline-none min-w-0"
-                      style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
-                    />
-                    <input
-                      value={editingFoodForm.protein}
-                      onChange={(e) => setEditingFoodForm({ ...editingFoodForm, protein: e.target.value })}
-                      placeholder="חלבון"
-                      type="number"
-                      inputMode="decimal"
-                      className="rounded-xl px-3 py-2 outline-none min-w-0"
-                      style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
-                    />
-                    <input
-                      value={editingFoodForm.fat}
-                      onChange={(e) => setEditingFoodForm({ ...editingFoodForm, fat: e.target.value })}
-                      placeholder="שומן"
-                      type="number"
-                      inputMode="decimal"
-                      className="rounded-xl px-3 py-2 outline-none min-w-0"
-                      style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
-                    />
+                    <label className="block">
+                      <span className="block text-[11px] mb-1" style={{ color: palette.mutedInk }}>גרמים</span>
+                      <input
+                        value={editingFoodForm.grams}
+                        onChange={(e) => setEditingFoodForm({ ...editingFoodForm, grams: e.target.value })}
+                        placeholder="לדוגמה 150"
+                        type="number"
+                        inputMode="decimal"
+                        className="w-full rounded-xl px-3 py-2 outline-none min-w-0"
+                        style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="block text-[11px] mb-1" style={{ color: palette.mutedInk }}>קלוריות</span>
+                      <input
+                        value={editingFoodForm.calories}
+                        onChange={(e) => setEditingFoodForm({ ...editingFoodForm, calories: e.target.value })}
+                        placeholder="לדוגמה 320"
+                        type="number"
+                        inputMode="decimal"
+                        className="w-full rounded-xl px-3 py-2 outline-none min-w-0"
+                        style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="block text-[11px] mb-1" style={{ color: palette.mutedInk }}>חלבון (גרם)</span>
+                      <input
+                        value={editingFoodForm.protein}
+                        onChange={(e) => setEditingFoodForm({ ...editingFoodForm, protein: e.target.value })}
+                        placeholder="לדוגמה 25"
+                        type="number"
+                        inputMode="decimal"
+                        className="w-full rounded-xl px-3 py-2 outline-none min-w-0"
+                        style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+                      />
+                    </label>
+
+                    <label className="block">
+                      <span className="block text-[11px] mb-1" style={{ color: palette.mutedInk }}>שומן (גרם)</span>
+                      <input
+                        value={editingFoodForm.fat}
+                        onChange={(e) => setEditingFoodForm({ ...editingFoodForm, fat: e.target.value })}
+                        placeholder="לדוגמה 12"
+                        type="number"
+                        inputMode="decimal"
+                        className="w-full rounded-xl px-3 py-2 outline-none min-w-0"
+                        style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+                      />
+                    </label>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
