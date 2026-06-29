@@ -441,3 +441,36 @@ button:active {
 input[type="file"] {
   display: none !important;
 }
+
+
+/* Hard image sizing safety for iPhone/Safari */
+.food-entry-photo,
+.food-entry-photo img {
+  width: 56px !important;
+  height: 56px !important;
+  max-width: 56px !important;
+  max-height: 56px !important;
+}
+
+.product-entry-photo,
+.product-entry-photo img {
+  width: 44px !important;
+  height: 44px !important;
+  max-width: 44px !important;
+  max-height: 44px !important;
+}
+
+.food-photo-preview img {
+  width: 96px !important;
+  height: 96px !important;
+  max-width: 96px !important;
+  max-height: 96px !important;
+}
+
+input[type="file"] {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  opacity: 0 !important;
+  overflow: hidden !important;
+}

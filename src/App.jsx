@@ -795,7 +795,7 @@ async function loadHistoryRows(dates) {
 }
 
 
-const USER_HEIGHT_M = 1.8;
+const DEFAULT_USER_HEIGHT_CM = 180;
 
 const MEAL_TEMPLATES = [
   { name: "ארוחת בוקר חלבון", grams: 350, calories: 430, protein: 35, fat: 14, category: "בוקר", note: "יוגורט/ביצים/גבינה + פחמימה קלה" },
@@ -828,9 +828,11 @@ function formatKg(value) {
   return `${roundOne(Number(value))} ק״ג`;
 }
 
-function getBmiInfo(weight, heightM = USER_HEIGHT_M) {
+function getBmiInfo(weight, heightCm = DEFAULT_USER_HEIGHT_CM) {
   const w = Number(weight);
-  if (!Number.isFinite(w) || w <= 0 || !heightM) return null;
+  const cm = Number(heightCm);
+  if (!Number.isFinite(w) || w <= 0 || !Number.isFinite(cm) || cm <= 0) return null;
+  const heightM = cm / 100;
   const bmi = w / (heightM * heightM);
   let label = "תקין";
   if (bmi < 18.5) label = "נמוך";
@@ -840,7 +842,7 @@ function getBmiInfo(weight, heightM = USER_HEIGHT_M) {
   return { bmi: roundOne(bmi), label };
 }
 
-function buildWeightStats(weightEntries = []) {
+function buildWeightStats(weightEntries = [], heightCm = DEFAULT_USER_HEIGHT_CM) {
   const sorted = weightEntries.slice().filter((w) => Number.isFinite(Number(w.weight))).sort((a, b) => a.date.localeCompare(b.date));
   if (!sorted.length) return { latest: null, previous: null, first: null, changeFromPrev: null, totalChange: null, bmi: null, points: "" };
   const latest = sorted[sorted.length - 1];
@@ -849,7 +851,7 @@ function buildWeightStats(weightEntries = []) {
   const changeFromPrev = previous ? roundOne(Number(latest.weight) - Number(previous.weight)) : null;
   const totalChange = sorted.length > 1 ? roundOne(Number(latest.weight) - Number(first.weight)) : null;
   const points = makeTrendPoints(sorted.slice(-8).map((w) => w.weight));
-  return { latest, previous, first, changeFromPrev, totalChange, bmi: getBmiInfo(Number(latest.weight)), points };
+  return { latest, previous, first, changeFromPrev, totalChange, bmi: getBmiInfo(Number(latest.weight), heightCm), points };
 }
 
 function buildTaskStats(tasks = []) {
@@ -931,6 +933,9 @@ export default function DayBoard() {
   const [weightEntries, setWeightEntries] = useState([]);
   const [weightDate, setWeightDate] = useState(getDateKey());
   const [weightValue, setWeightValue] = useState("");
+  const [userHeightCm, setUserHeightCm] = useState(DEFAULT_USER_HEIGHT_CM);
+  const [heightInput, setHeightInput] = useState(String(DEFAULT_USER_HEIGHT_CM));
+  const [isEditingHeight, setIsEditingHeight] = useState(false);
 
   const dateKeyRef = useRef(dateKey);
   dateKeyRef.current = dateKey;
@@ -958,6 +963,7 @@ export default function DayBoard() {
       const lib = await loadKey("foodLibrary", []);
       const savedWaterGoal = await loadKey("dailyWaterGoal", DEFAULT_WATER_GOAL);
       const savedCalorieGoal = await loadKey("dailyCalorieGoal", DEFAULT_CALORIE_GOAL);
+      const savedHeight = await loadKey("userHeightCm", DEFAULT_USER_HEIGHT_CM);
       let histDates = await loadKey("dailyHistoryDates", []);
       if ((f.length > 0 || w.length > 0) && !histDates.includes(dateKey)) {
         histDates = await addDateToHistory(dateKey);
@@ -968,6 +974,9 @@ export default function DayBoard() {
       setWaterEntries(w);
       setWeightEntries(wt);
       setSavedFoods(lib);
+      const cleanHeight = Math.round(numberFromInput(savedHeight) || DEFAULT_USER_HEIGHT_CM);
+      setUserHeightCm(cleanHeight);
+      setHeightInput(String(cleanHeight));
       setDailyWaterGoal(Number(savedWaterGoal) || DEFAULT_WATER_GOAL);
       setWaterGoalInput(String(Number(savedWaterGoal) || DEFAULT_WATER_GOAL));
       setDailyCalorieGoal(Number(savedCalorieGoal) || DEFAULT_CALORIE_GOAL);
@@ -1312,6 +1321,15 @@ export default function DayBoard() {
   const waterGoalReached = totalWater >= dailyWaterGoal;
 
   // ---- weight ----
+  const saveUserHeight = async () => {
+    const value = Math.round(numberFromInput(heightInput) || 0);
+    if (value < 120 || value > 230) return;
+    setUserHeightCm(value);
+    setHeightInput(String(value));
+    setIsEditingHeight(false);
+    await saveKey("userHeightCm", value);
+  };
+
   const persistWeight = useCallback(async (next) => {
     setWeightEntries(next);
     await saveKey("weight", next);
@@ -1413,6 +1431,7 @@ export default function DayBoard() {
             totalWater={totalWater}
             dailyWaterGoal={dailyWaterGoal}
             weightEntries={weightEntries}
+            userHeightCm={userHeightCm}
             historyRows={historyRows}
             setTab={setTab}
           />
@@ -1496,6 +1515,12 @@ export default function DayBoard() {
             setWeightDate={setWeightDate}
             weightValue={weightValue}
             setWeightValue={setWeightValue}
+            userHeightCm={userHeightCm}
+            heightInput={heightInput}
+            setHeightInput={setHeightInput}
+            isEditingHeight={isEditingHeight}
+            setIsEditingHeight={setIsEditingHeight}
+            saveUserHeight={saveUserHeight}
             saveWeight={saveWeight}
             deleteWeight={deleteWeight}
           />
@@ -1598,9 +1623,9 @@ function formatDue(due) {
 }
 
 
-function DashboardView({ tasks, foodTotals, dailyCalorieGoal, totalWater, dailyWaterGoal, weightEntries, historyRows, setTab }) {
+function DashboardView({ tasks, foodTotals, dailyCalorieGoal, totalWater, dailyWaterGoal, weightEntries, userHeightCm, historyRows, setTab }) {
   const taskStats = buildTaskStats(tasks);
-  const weightStats = buildWeightStats(weightEntries);
+  const weightStats = buildWeightStats(weightEntries, userHeightCm);
   const caloriePct = dailyCalorieGoal ? clampPct((safeNum(foodTotals.calories) / dailyCalorieGoal) * 100) : 0;
   const waterPct = dailyWaterGoal ? clampPct((safeNum(totalWater) / dailyWaterGoal) * 100) : 0;
   const caloriesLeft = Math.round(dailyCalorieGoal - safeNum(foodTotals.calories));
@@ -2475,9 +2500,13 @@ function FoodView({
           />
         </label>
         {photoPreview && (
-          <div className="mt-3 flex items-center gap-3 rounded-2xl p-2" style={{ border: `1px solid ${palette.border}`, background: palette.bg }}>
-            <img src={photoPreview} alt="תצוגה מקדימה של האוכל" className="h-24 w-24 object-cover rounded-xl flex-shrink-0" />
-            <div className="flex-1 min-w-0">
+          <div className="mt-3 food-photo-preview" style={{ display: "flex", alignItems: "center", gap: "12px", borderRadius: "18px", padding: "8px", border: `1px solid ${palette.border}`, background: palette.bg, overflow: "hidden" }}>
+            <img
+              src={photoPreview}
+              alt="תצוגה מקדימה של האוכל"
+              style={{ width: "96px", height: "96px", maxWidth: "96px", maxHeight: "96px", objectFit: "cover", borderRadius: "14px", flex: "0 0 96px", display: "block" }}
+            />
+            <div style={{ flex: 1, minWidth: 0 }}>
               <p className="text-sm font-medium" style={{ color: palette.ink }}>תמונה נבחרה</p>
               <p className="text-[11px] mt-1" style={{ color: palette.mutedInk }}>הזיהוי מילא את הפרטים למטה. אפשר לערוך לפני שמירה.</p>
             </div>
@@ -2600,8 +2629,8 @@ function FoodView({
         </div>
         {(barcodePreview || labelPreview) && (
           <div className="grid grid-cols-2 gap-2 mt-3">
-            {barcodePreview && <img src={barcodePreview} alt="ברקוד" className="w-full h-20 object-cover rounded-xl" style={{ border: `1px solid ${palette.border}` }} />}
-            {labelPreview && <img src={labelPreview} alt="תווית תזונתית" className="w-full h-20 object-cover rounded-xl" style={{ border: `1px solid ${palette.border}` }} />}
+            {barcodePreview && <img src={barcodePreview} alt="ברקוד" style={{ width: "100%", height: "80px", maxHeight: "80px", objectFit: "cover", borderRadius: "12px", display: "block", border: `1px solid ${palette.border}` }} />}
+            {labelPreview && <img src={labelPreview} alt="תווית תזונתית" style={{ width: "100%", height: "80px", maxHeight: "80px", objectFit: "cover", borderRadius: "12px", display: "block", border: `1px solid ${palette.border}` }} />}
           </div>
         )}
         {(barcodeStatus || labelStatus) && (
@@ -2625,11 +2654,36 @@ function FoodView({
                 <button
                   type="button"
                   onClick={() => setSelectedFoodImage(f.imageData)}
-                  className="rounded-xl overflow-hidden food-entry-photo"
-                  style={{ width: 56, height: 56, minWidth: 56, maxWidth: 56, flexShrink: 0, border: `1px solid ${palette.border}`, background: palette.bg }}
+                  className="food-entry-photo"
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    minWidth: "56px",
+                    maxWidth: "56px",
+                    minHeight: "56px",
+                    maxHeight: "56px",
+                    flex: "0 0 56px",
+                    borderRadius: "14px",
+                    overflow: "hidden",
+                    padding: 0,
+                    border: `1px solid ${palette.border}`,
+                    background: palette.bg,
+                    display: "block"
+                  }}
                   title="פתח תמונה"
                 >
-                  <img src={f.imageData} alt={f.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  <img
+                    src={f.imageData}
+                    alt={f.name}
+                    style={{
+                      width: "56px",
+                      height: "56px",
+                      maxWidth: "56px",
+                      maxHeight: "56px",
+                      objectFit: "cover",
+                      display: "block"
+                    }}
+                  />
                 </button>
               ) : null}
               <div className="flex-1">
@@ -2650,13 +2704,30 @@ function FoodView({
       )}
       {selectedFoodImage && (
         <div
-          className="fixed inset-0 z-[70] flex items-center justify-center px-5 py-8"
-          style={{ background: "rgba(20,18,15,0.48)", backdropFilter: "blur(4px)" }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 70,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
+            background: "rgba(20,18,15,0.48)",
+            backdropFilter: "blur(4px)"
+          }}
           onClick={() => setSelectedFoodImage("")}
         >
           <div
-            className="relative w-full rounded-3xl p-3"
-            style={{ maxWidth: 360, background: palette.surface, border: `1px solid ${palette.border}`, boxShadow: "0 18px 45px rgba(0,0,0,0.22)" }}
+            style={{
+              position: "relative",
+              width: "100%",
+              maxWidth: "340px",
+              borderRadius: "24px",
+              padding: "12px",
+              background: palette.surface,
+              border: `1px solid ${palette.border}`,
+              boxShadow: "0 18px 45px rgba(0,0,0,0.22)"
+            }}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-2">
@@ -2670,12 +2741,17 @@ function FoodView({
                 <X size={17} />
               </button>
             </div>
-            <div className="rounded-2xl overflow-hidden" style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
+            <div style={{ borderRadius: "18px", overflow: "hidden", background: palette.bg, border: `1px solid ${palette.border}` }}>
               <img
                 src={selectedFoodImage}
                 alt="תמונת הארוחה"
-                className="w-full object-contain"
-                style={{ maxHeight: "48vh" }}
+                style={{
+                  width: "100%",
+                  height: "auto",
+                  maxHeight: "42vh",
+                  objectFit: "contain",
+                  display: "block"
+                }}
               />
             </div>
           </div>
@@ -2849,7 +2925,7 @@ function ProductLibraryModal({
               />
               {libraryForm.imageData && (
                 <div className="flex items-center gap-2 rounded-xl px-3 py-2" style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
-                  <img src={libraryForm.imageData} alt="תמונת מוצר" className="h-12 w-12 object-cover rounded-lg" />
+                  <img src={libraryForm.imageData} alt="תמונת מוצר" style={{ width: "48px", height: "48px", maxWidth: "48px", maxHeight: "48px", objectFit: "cover", borderRadius: "10px", display: "block", flexShrink: 0 }} />
                   <span className="text-xs flex-1" style={{ color: palette.mutedInk }}>תמונה שמורה למוצר הזה</span>
                   <button
                     type="button"
@@ -2928,8 +3004,34 @@ function ProductLibraryModal({
               {visibleSavedFoods.map((p) => (
                 <div key={p.id} className="flex items-center gap-2 rounded-xl px-3 py-2 list-row" style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
                   {p.imageData ? (
-                    <div className="rounded-lg overflow-hidden product-entry-photo" style={{ width: 44, height: 44, minWidth: 44, flexShrink: 0, border: `1px solid ${palette.border}` }}>
-                      <img src={p.imageData} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    <div
+                      className="product-entry-photo"
+                      style={{
+                        width: "44px",
+                        height: "44px",
+                        minWidth: "44px",
+                        maxWidth: "44px",
+                        minHeight: "44px",
+                        maxHeight: "44px",
+                        flex: "0 0 44px",
+                        borderRadius: "10px",
+                        overflow: "hidden",
+                        border: `1px solid ${palette.border}`,
+                        background: palette.surface
+                      }}
+                    >
+                      <img
+                        src={p.imageData}
+                        alt={p.name}
+                        style={{
+                          width: "44px",
+                          height: "44px",
+                          maxWidth: "44px",
+                          maxHeight: "44px",
+                          objectFit: "cover",
+                          display: "block"
+                        }}
+                      />
                     </div>
                   ) : null}
                   <div className="flex-1 min-w-0">
@@ -3170,7 +3272,7 @@ function WaterView({ totalWater, waterPct, waterGoalReached, dailyWaterGoal, wat
   );
 }
 
-function WeightView({ weightEntries, weightDate, setWeightDate, weightValue, setWeightValue, saveWeight, deleteWeight }) {
+function WeightView({ weightEntries, weightDate, setWeightDate, weightValue, setWeightValue, userHeightCm, heightInput, setHeightInput, isEditingHeight, setIsEditingHeight, saveUserHeight, saveWeight, deleteWeight }) {
   const sortedAsc = weightEntries.slice().sort((a, b) => a.date.localeCompare(b.date));
   const rows = sortedAsc.map((entry, i) => ({
     ...entry,
@@ -3187,9 +3289,70 @@ function WeightView({ weightEntries, weightDate, setWeightDate, weightValue, set
       <SectionHeader
         icon={Scale}
         title="משקל גוף"
-        subtitle="מעקב שקילות, שינוי מהשקילה הקודמת, BMI ומגמה לאורך זמן."
+        subtitle="מעקב שקילות, שינוי מהשקילה הקודמת, BMI ומגמה לפי הגובה האישי שלך."
         accent={palette.weightAccent}
       />
+
+      <Card>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium">גובה לחישוב BMI</p>
+            <p className="text-[11px] mt-1" style={{ color: palette.mutedInk }}>
+              ה־BMI מחושב לפי הגובה שהוגדר כאן.
+            </p>
+          </div>
+          {!isEditingHeight && (
+            <div className="flex items-center gap-2">
+              <span className="text-base font-semibold" style={{ color: palette.weightAccent }}>{userHeightCm} ס״מ</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setHeightInput(String(userHeightCm));
+                  setIsEditingHeight(true);
+                }}
+                className="rounded-lg p-1.5"
+                style={{ background: palette.weightAccentSoft, color: palette.weightAccent }}
+                title="עריכת גובה"
+              >
+                <Pencil size={15} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {isEditingHeight && (
+          <div className="grid grid-cols-[1fr_auto_auto] gap-2 mt-3">
+            <input
+              value={heightInput}
+              onChange={(e) => setHeightInput(e.target.value)}
+              placeholder="גובה בס״מ"
+              inputMode="numeric"
+              type="number"
+              className="rounded-xl px-3 py-2 outline-none min-w-0"
+              style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+            />
+            <button
+              type="button"
+              onClick={saveUserHeight}
+              className="rounded-xl px-3 text-sm font-medium"
+              style={{ background: palette.weightAccent, color: "#fff" }}
+            >
+              שמור
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setHeightInput(String(userHeightCm));
+                setIsEditingHeight(false);
+              }}
+              className="rounded-xl px-3 text-sm font-medium"
+              style={{ background: palette.bg, color: palette.mutedInk, border: `1px solid ${palette.border}` }}
+            >
+              ביטול
+            </button>
+          </div>
+        )}
+      </Card>
 
       <Card>
         {latest ? (
@@ -3211,12 +3374,12 @@ function WeightView({ weightEntries, weightDate, setWeightDate, weightValue, set
       <Card>
         <div className="flex items-center justify-between mb-3">
           <p className="text-sm font-medium flex items-center gap-1.5"><Activity size={16} style={{ color: palette.weightAccent }} /> ניתוח גוף</p>
-          <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.weightAccentSoft, color: palette.weightAccent }}>גובה 1.80</span>
+          <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.weightAccentSoft, color: palette.weightAccent }}>{userHeightCm} ס״מ</span>
         </div>
         {latest ? (
           <div className="grid grid-cols-3 gap-2">
-            <MiniInsight label="BMI" value={getBmiInfo(latest.weight)?.bmi ?? "—"} />
-            <MiniInsight label="קטגוריה" value={getBmiInfo(latest.weight)?.label ?? "—"} />
+            <MiniInsight label="BMI" value={getBmiInfo(latest.weight, userHeightCm)?.bmi ?? "—"} />
+            <MiniInsight label="קטגוריה" value={getBmiInfo(latest.weight, userHeightCm)?.label ?? "—"} />
             <MiniInsight label="מגמה" value={latest.delta === null ? "—" : `${latest.delta > 0 ? "+" : ""}${latest.delta} ק״ג`} danger={latest.delta > 0} />
           </div>
         ) : (
