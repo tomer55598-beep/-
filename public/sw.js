@@ -1,5 +1,5 @@
-// This service worker exists only to clean old cached versions.
-// Older builds cached index.html too aggressively, which could make iPhone open an outdated/blank app.
+// Cache-bust service worker: always fetch fresh files and clear old caches.
+const CACHE_BUST_VERSION = "no-global-header-v3";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
@@ -11,10 +11,9 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
       await Promise.all(keys.map((key) => caches.delete(key)));
       await self.clients.claim();
-
-      const clients = await self.clients.matchAll({ type: "window" });
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       for (const client of clients) {
-        client.navigate(client.url);
+        try { client.navigate(client.url); } catch (e) {}
       }
     })()
   );
@@ -22,5 +21,5 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
-  event.respondWith(fetch(event.request));
+  event.respondWith(fetch(event.request, { cache: "no-store" }).catch(() => fetch(event.request)));
 });

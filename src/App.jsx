@@ -1391,37 +1391,6 @@ export default function DayBoard() {
         input::placeholder { color: #B7AE9C; }
       `}</style>
       {/* header */}
-      {(tab === "dashboard" || tab === "tasks") ? (
-        <header className="px-5 pt-6 pb-4 max-w-xl mx-auto app-header">
-          <div className="hero-card">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm hero-date">{formatHebrewDate()}</p>
-                <h1 className="font-display text-3xl mt-1 hero-title">תכנון יומי</h1>
-              </div>
-              <div className="hero-pill">
-                <span className="hero-dot" />
-                היום
-              </div>
-            </div>
-
-            <div className="hero-stats">
-              <div className="hero-stat">
-                <span>{openTasksCount}</span>
-                <small>משימות פתוחות</small>
-              </div>
-              <div className="hero-stat">
-                <span>{todayCalories}</span>
-                <small>מתוך {dailyCalorieGoal} קל׳</small>
-              </div>
-              <div className="hero-stat">
-                <span>{waterLiters} ל׳</span>
-                <small>מתוך {(dailyWaterGoal / 1000).toFixed(1)} ל׳</small>
-              </div>
-            </div>
-          </div>
-        </header>
-      ) : null}
 
 
       <main className="px-5 max-w-xl mx-auto app-main">
@@ -2239,51 +2208,81 @@ function FoodView({
 
   return (
     <div>
-      
 
-      {nutritionSubTab === "water" && (
-        <NutritionWaterPanel
-          totalWater={totalWater}
-          waterPct={waterPct}
-          waterGoalReached={waterGoalReached}
-          dailyWaterGoal={dailyWaterGoal}
-          waterGoalInput={waterGoalInput}
-          setWaterGoalInput={setWaterGoalInput}
-          isEditingWaterGoal={isEditingWaterGoal}
-          setIsEditingWaterGoal={setIsEditingWaterGoal}
-          saveDailyWaterGoal={saveDailyWaterGoal}
-          addWater={addWater}
-          customWater={customWater}
-          setCustomWater={setCustomWater}
-          waterEntries={waterEntries}
-          removeWaterEntry={removeWaterEntry}
-        />
-      )}
+      <Card>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div>
+            <p className="text-sm font-medium">סיכום תזונה היום</p>
+            <p className="text-[11px] mt-0.5" style={{ color: palette.mutedInk }}>
+              קלוריות ומאקרו מהאוכל שנרשם היום.
+            </p>
+          </div>
+          <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>
+            {Math.round(totals.calories)} / {dailyCalorieGoal}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          <MiniInsight label="קלוריות" value={`${Math.round(totals.calories)}`} />
+          <MiniInsight label="חלבון" value={`${roundOne(totals.protein)} ג׳`} />
+          <MiniInsight label="שומן" value={`${roundOne(totals.fat)} ג׳`} />
+        </div>
+
+        <div className="h-2 rounded-full overflow-hidden mt-3" style={{ background: palette.foodAccentSoft }}>
+          <div
+            className="h-full rounded-full transition-all"
+            style={{ width: `${Math.min(100, Math.round((totals.calories / dailyCalorieGoal) * 100))}%`, background: palette.foodAccent }}
+          />
+        </div>
+
+        <p className="text-[11px] mt-2" style={{ color: caloriesLeft >= 0 ? palette.mutedInk : palette.danger }}>
+          {caloriesLeft >= 0 ? `נשארו ${caloriesLeft} קלוריות ליעד.` : `חריגה של ${Math.abs(caloriesLeft)} קלוריות מהיעד.`}
+        </p>
+      </Card>
 
 
-      {nutritionSubTab === "log" && (
-        <>
 
-      
+      <Card>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div>
+            <p className="text-sm font-medium">מרכז תזונה</p>
+            <p className="text-[11px] mt-0.5" style={{ color: palette.mutedInk }}>
+              התפריט קבוע. רק התוכן שמתחתיו מתחלף.
+            </p>
+          </div>
+          <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>
+            תפריט
+          </span>
+        </div>
 
-      {nutritionSubTab === "water" && (
-        <NutritionWaterPanel
-          totalWater={totalWater}
-          waterPct={waterPct}
-          waterGoalReached={waterGoalReached}
-          dailyWaterGoal={dailyWaterGoal}
-          waterGoalInput={waterGoalInput}
-          setWaterGoalInput={setWaterGoalInput}
-          isEditingWaterGoal={isEditingWaterGoal}
-          setIsEditingWaterGoal={setIsEditingWaterGoal}
-          saveDailyWaterGoal={saveDailyWaterGoal}
-          addWater={addWater}
-          customWater={customWater}
-          setCustomWater={setCustomWater}
-          waterEntries={waterEntries}
-          removeWaterEntry={removeWaterEntry}
-        />
-      )}
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { key: "log", label: "אוכל", icon: Utensils },
+            { key: "water", label: "שתייה", icon: Droplets },
+            { key: "tools", label: "צילום וסריקות", icon: Camera },
+            { key: "templates", label: "תבניות וספר", icon: BookOpen },
+          ].map((item) => {
+            const Icon = item.icon;
+            const active = nutritionSubTab === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setNutritionSubTab(item.key)}
+                className="rounded-2xl px-3 py-2 text-sm font-medium flex items-center justify-center gap-1.5"
+                style={{
+                  background: active ? palette.foodAccent : palette.bg,
+                  color: active ? "#fff" : palette.ink,
+                  border: `1px solid ${active ? palette.foodAccent : palette.border}`,
+                }}
+              >
+                <Icon size={15} />
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
 
 
       {nutritionSubTab === "log" && (
@@ -2388,51 +2387,6 @@ function FoodView({
         </div>
       </Card>
 
-      <Card>
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div>
-            <p className="text-sm font-medium">מרכז תזונה</p>
-            <p className="text-[11px] mt-0.5" style={{ color: palette.mutedInk }}>
-              בחר תת־קטגוריה. התפריט נשאר קבוע כדי שיהיה קל לעבור בין אוכל, שתייה, צילום ותבניות.
-            </p>
-          </div>
-          <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>תפריט</span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { key: "log", label: "אוכל", icon: Utensils },
-            { key: "water", label: "שתייה", icon: Droplets },
-            { key: "tools", label: "צילום וסריקות", icon: Camera },
-            { key: "templates", label: "תבניות וספר", icon: BookOpen },
-          ].map((item) => {
-            const Icon = item.icon;
-            const active = nutritionSubTab === item.key;
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setNutritionSubTab(item.key)}
-                className="rounded-2xl px-3 py-2 text-sm font-medium flex items-center justify-center gap-1.5"
-                style={{
-                  background: active ? palette.foodAccent : palette.bg,
-                  color: active ? "#fff" : palette.ink,
-                  border: `1px solid ${active ? palette.foodAccent : palette.border}`,
-                }}
-              >
-                <Icon size={15} />
-                {item.label}
-              </button>
-            );
-          })}
-        </div>
-      </Card>
-
-
-      
-
-      
-
 {foodEntries.length === 0 ? (
         <p className="text-sm text-center mt-6" style={{ color: palette.mutedInk }}>עדיין לא נרשם אוכל היום.</p>
       ) : (
@@ -2491,260 +2445,26 @@ function FoodView({
           ))}
         </div>
       )}
-      
         </>
       )}
 
-      {nutritionSubTab === "tools" && (
-        <>
-<Card>
-        <button
-          type="button"
-          onClick={() => setShowPhotoTools((v) => !v)}
-          className="w-full flex items-center justify-between gap-2"
-        >
-          <span className="text-sm font-medium flex items-center gap-1.5"><Camera size={16} style={{ color: palette.foodAccent }} /> צילום אוכל</span>
-          <span className="flex items-center gap-2">
-            <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>AI</span>
-            {showPhotoTools ? <ChevronUp size={18} style={{ color: palette.mutedInk }} /> : <ChevronDown size={18} style={{ color: palette.mutedInk }} />}
-          </span>
-        </button>
-        {showPhotoTools && (
-          <>
-        <p className="text-[11px] my-3" style={{ color: palette.mutedInk }}>
-          צלם אוכל או העלה תמונה. הזיהוי ימלא שם מאכל, גרמים משוערים, קלוריות, חלבון ושומן — ואז אפשר לערוך לפני שמירה.
-        </p>
-
-        <label
-          className="w-full rounded-xl py-3 px-3 flex items-center justify-center gap-2 font-medium cursor-pointer text-sm text-center leading-tight overflow-hidden"
-          style={{ background: palette.foodAccent, color: "#fff" }}
-        >
-          {isAnalyzingPhoto ? <Loader2 size={18} className="spin" /> : <Camera size={18} />}
-          {isAnalyzingPhoto ? "מזהה את האוכל..." : "צלם / העלה תמונה"}
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            style={{ display: "none" }}
-            disabled={isAnalyzingPhoto}
-            onChange={(e) => analyzeFoodPhoto(e.target.files?.[0])}
-          />
-        </label>
-        {photoPreview && (
-          <div className="mt-3 food-photo-preview" style={{ display: "flex", alignItems: "center", gap: "12px", borderRadius: "18px", padding: "8px", border: `1px solid ${palette.border}`, background: palette.bg, overflow: "hidden" }}>
-            <img
-              src={photoPreview}
-              alt="תצוגה מקדימה של האוכל"
-              style={{ width: "96px", height: "96px", maxWidth: "96px", maxHeight: "96px", objectFit: "cover", borderRadius: "14px", flex: "0 0 96px", display: "block" }}
-            />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p className="text-sm font-medium" style={{ color: palette.ink }}>תמונה נבחרה</p>
-              <p className="text-[11px] mt-1" style={{ color: palette.mutedInk }}>הזיהוי מילא את הפרטים למטה. אפשר לערוך לפני שמירה.</p>
-            </div>
-          </div>
-        )}
-        {photoPreview && (
-          <div className="grid grid-cols-2 gap-2 mt-3">
-            <button
-              type="button"
-              onClick={handleSaveCurrentFoodToLibrary}
-              className="rounded-xl py-2 text-sm font-medium"
-              style={{ background: palette.foodAccentSoft, color: palette.foodAccent, border: `1px solid ${palette.border}` }}
-            >
-              שמור לספר מוצרים
-            </button>
-            <button
-              type="button"
-              onClick={clearFoodPhotoState}
-              className="rounded-xl py-2 text-sm font-medium"
-              style={{ background: palette.bg, color: palette.mutedInk, border: `1px solid ${palette.border}` }}
-            >
-              נקה תמונה
-            </button>
-          </div>
-        )}
-        {photoAnalyzeError && (
-          <p className="text-[11px] rounded-xl px-3 py-2 mt-3" style={{ background: palette.weightAccentSoft, color: palette.danger }}>
-            {photoAnalyzeError}
-          </p>
-        )}
-        {librarySaveStatus && (
-          <p className="text-[11px] rounded-xl px-3 py-2 mt-3" style={{ background: palette.foodAccentSoft, color: librarySaveStatus.includes("צריך") ? palette.danger : palette.foodAccent }}>
-            {librarySaveStatus}
-          </p>
-        )}
-        <p className="text-[10px] mt-2 flex items-center gap-1" style={{ color: palette.mutedInk }}>
-          <ImageIcon size={12} /> הערכה מתמונה היא משוערת. אחרי הזיהוי אפשר לתקן גרמים/ערכים ידנית.
-        </p>
-      
-          </>
-        )}
-      </Card>
-
-<Card>
-        <button
-          type="button"
-          onClick={() => setShowBarcodeTools((v) => !v)}
-          className="w-full flex items-center justify-between gap-2"
-        >
-          <span className="text-sm font-medium flex items-center gap-1.5"><BookOpen size={16} style={{ color: palette.foodAccent }} /> ברקוד / תווית מוצר</span>
-          <span className="flex items-center gap-2">
-            <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>מוצר ארוז</span>
-            {showBarcodeTools ? <ChevronUp size={18} style={{ color: palette.mutedInk }} /> : <ChevronDown size={18} style={{ color: palette.mutedInk }} />}
-          </span>
-        </button>
-        {showBarcodeTools && (
-          <>
-        <p className="text-[11px] my-3" style={{ color: palette.mutedInk }}>
-          צלם ברקוד כדי למצוא מוצר, או צלם את התווית התזונתית כדי למלא קלוריות, חלבון ושומן. אחרי הסריקה אפשר לתקן את הכמות בגרמים.
-        </p>
-
-        <div className="grid grid-cols-1 gap-2">
-          <label
-            className="w-full rounded-xl py-3 px-3 flex items-center justify-center gap-2 font-medium cursor-pointer text-sm text-center leading-tight overflow-hidden"
-            style={{ background: palette.foodAccent, color: "#fff" }}
-          >
-            {isScanningBarcode ? <Loader2 size={18} className="spin" /> : <Camera size={18} />}
-            {isScanningBarcode ? "סורק ברקוד..." : "צלם ברקוד"}
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              style={{ display: "none" }}
-              disabled={isScanningBarcode}
-              onChange={(e) => scanBarcodePhoto(e.target.files?.[0])}
-            />
-          </label>
-          <label
-            className="w-full rounded-xl py-3 px-3 flex items-center justify-center gap-2 font-medium cursor-pointer text-sm text-center leading-tight overflow-hidden"
-            style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}
-          >
-            {isAnalyzingLabel ? <Loader2 size={18} className="spin" /> : <ImageIcon size={18} />}
-            {isAnalyzingLabel ? "קורא תווית..." : "צלם תווית תזונתית"}
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              style={{ display: "none" }}
-              disabled={isAnalyzingLabel}
-              onChange={(e) => analyzeNutritionLabel(e.target.files?.[0])}
-            />
-          </label>
-        </div>
-        <div className="flex gap-2 mt-3">
-          <input
-            value={barcodeInput}
-            onChange={(e) => setBarcodeInput(e.target.value)}
-            placeholder="או הזן ברקוד ידנית"
-            inputMode="numeric"
-            className="flex-1 rounded-xl px-3 py-2 outline-none text-sm"
-            style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
-          />
-          <button
-            type="button"
-            onClick={async () => {
-              setBarcodeStatus("");
-              setIsScanningBarcode(true);
-              try {
-                const product = await lookupBarcode(barcodeInput);
-                setBarcodeStatus(`נמצא: ${product.name || barcodeInput}`);
-              } catch (err) {
-                setBarcodeStatus(err?.message || "המוצר לא נמצא");
-              } finally {
-                setIsScanningBarcode(false);
-              }
-            }}
-            className="rounded-xl px-3 text-sm font-medium whitespace-nowrap"
-            style={{ background: palette.foodAccentSoft, color: palette.foodAccent, border: `1px solid ${palette.border}` }}
-          >
-            חפש
-          </button>
-        </div>
-        {(barcodePreview || labelPreview) && (
-          <div className="grid grid-cols-2 gap-2 mt-3">
-            {barcodePreview && <img src={barcodePreview} alt="ברקוד" style={{ width: "100%", height: "80px", maxHeight: "80px", objectFit: "cover", borderRadius: "12px", display: "block", border: `1px solid ${palette.border}` }} />}
-            {labelPreview && <img src={labelPreview} alt="תווית תזונתית" style={{ width: "100%", height: "80px", maxHeight: "80px", objectFit: "cover", borderRadius: "12px", display: "block", border: `1px solid ${palette.border}` }} />}
-          </div>
-        )}
-        {(barcodeStatus || labelStatus) && (
-          <p className="text-[11px] rounded-xl px-3 py-2 mt-3" style={{ background: palette.foodAccentSoft, color: barcodeStatus?.includes("נכשל") || barcodeStatus?.includes("לא") || labelStatus?.includes("לא") ? palette.danger : palette.foodAccent }}>
-            {barcodeStatus || labelStatus}
-          </p>
-        )}
-        <p className="text-[10px] mt-2 flex items-center gap-1" style={{ color: palette.mutedInk }}>
-          <ImageIcon size={12} /> ברקוד משתמש במאגר מוצרים פתוח. אם לא נמצא מוצר — צלם תווית או הזן ידנית.
-        </p>
-      
-          </>
-        )}
-      </Card>
-        </>
-      )}
-
-      {nutritionSubTab === "templates" && (
-        <>
-
-
-{foodEntries.length === 0 ? (
-        <p className="text-sm text-center mt-6" style={{ color: palette.mutedInk }}>עדיין לא נרשם אוכל היום.</p>
-      ) : (
-        <div className="space-y-2">
-          {foodEntries.map((f) => (
-            <div key={f.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 list-row" style={{ background: palette.surface, border: `1px solid ${palette.border}` }}>
-              {f.imageData ? (
-                <button
-                  type="button"
-                  onClick={() => setSelectedFoodImage(f.imageData)}
-                  className="food-entry-photo"
-                  style={{
-                    width: "56px",
-                    height: "56px",
-                    minWidth: "56px",
-                    maxWidth: "56px",
-                    minHeight: "56px",
-                    maxHeight: "56px",
-                    flex: "0 0 56px",
-                    borderRadius: "14px",
-                    overflow: "hidden",
-                    padding: 0,
-                    border: `1px solid ${palette.border}`,
-                    background: palette.bg,
-                    display: "block"
-                  }}
-                  title="פתח תמונה"
-                >
-                  <img
-                    src={f.imageData}
-                    alt={f.name}
-                    style={{
-                      width: "56px",
-                      height: "56px",
-                      maxWidth: "56px",
-                      maxHeight: "56px",
-                      objectFit: "cover",
-                      display: "block"
-                    }}
-                  />
-                </button>
-              ) : null}
-              <div className="flex-1">
-                <p className="text-sm font-medium">{f.name}</p>
-                {getFoodProfileLabel(f) && (
-                  <p className="text-[11px] mt-0.5" style={{ color: palette.foodAccent }}>{getFoodProfileLabel(f)}</p>
-                )}
-                <p className="text-[11px]" style={{ color: palette.mutedInk }}>
-                  {f.time}{f.grams ? ` · ${f.grams} גרם` : ""} · {formatFoodNutrition(f)}
-                </p>
-              </div>
-              <button onClick={() => deleteFood(f.id)} style={{ color: palette.mutedInk }}>
-                <X size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      
-        </>
+      {nutritionSubTab === "water" && (
+        <NutritionWaterPanel
+          totalWater={totalWater}
+          waterPct={waterPct}
+          waterGoalReached={waterGoalReached}
+          dailyWaterGoal={dailyWaterGoal}
+          waterGoalInput={waterGoalInput}
+          setWaterGoalInput={setWaterGoalInput}
+          isEditingWaterGoal={isEditingWaterGoal}
+          setIsEditingWaterGoal={setIsEditingWaterGoal}
+          saveDailyWaterGoal={saveDailyWaterGoal}
+          addWater={addWater}
+          customWater={customWater}
+          setCustomWater={setCustomWater}
+          waterEntries={waterEntries}
+          removeWaterEntry={removeWaterEntry}
+        />
       )}
 
       {nutritionSubTab === "tools" && (
@@ -2984,7 +2704,6 @@ function FoodView({
         )}
       </Card>
 
-      
 
           <Card>
             <div className="flex items-center justify-between gap-3">
@@ -3004,127 +2723,7 @@ function FoodView({
               </button>
             </div>
           </Card>
-        </>
-      )}
 
-
-        </>
-      )}
-
-      {nutritionSubTab === "tools" && (
-        <>
-<Card>
-        <button
-          type="button"
-          onClick={() => setShowPhotoTools((v) => !v)}
-          className="w-full flex items-center justify-between gap-2"
-        >
-          <span className="text-sm font-medium flex items-center gap-1.5"><Camera size={16} style={{ color: palette.foodAccent }} /> צילום אוכל</span>
-          <span className="flex items-center gap-2">
-            <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>AI</span>
-            {showPhotoTools ? <ChevronUp size={18} style={{ color: palette.mutedInk }} /> : <ChevronDown size={18} style={{ color: palette.mutedInk }} />}
-          </span>
-        </button>
-        {showPhotoTools && (
-          <>
-        <p className="text-[11px] my-3" style={{ color: palette.mutedInk }}>
-          צלם אוכל או העלה תמונה. הזיהוי ימלא שם מאכל, גרמים משוערים, קלוריות, חלבון ושומן — ואז אפשר לערוך לפני שמירה.
-        </p>
-
-        <label
-          className="w-full rounded-xl py-3 px-3 flex items-center justify-center gap-2 font-medium cursor-pointer text-sm text-center leading-tight overflow-hidden"
-          style={{ background: palette.foodAccent, color: "#fff" }}
-        >
-          {isAnalyzingPhoto ? <Loader2 size={18} className="spin" /> : <Camera size={18} />}
-          {isAnalyzingPhoto ? "מזהה את האוכל..." : "צלם / העלה תמונה"}
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            style={{ display: "none" }}
-            disabled={isAnalyzingPhoto}
-            onChange={(e) => analyzeFoodPhoto(e.target.files?.[0])}
-          />
-        </label>
-        {photoPreview && (
-          <div className="mt-3 food-photo-preview" style={{ display: "flex", alignItems: "center", gap: "12px", borderRadius: "18px", padding: "8px", border: `1px solid ${palette.border}`, background: palette.bg, overflow: "hidden" }}>
-            <img
-              src={photoPreview}
-              alt="תצוגה מקדימה של האוכל"
-              style={{ width: "96px", height: "96px", maxWidth: "96px", maxHeight: "96px", objectFit: "cover", borderRadius: "14px", flex: "0 0 96px", display: "block" }}
-            />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p className="text-sm font-medium" style={{ color: palette.ink }}>תמונה נבחרה</p>
-              <p className="text-[11px] mt-1" style={{ color: palette.mutedInk }}>הזיהוי מילא את הפרטים למטה. אפשר לערוך לפני שמירה.</p>
-            </div>
-          </div>
-        )}
-        {photoPreview && (
-          <div className="grid grid-cols-2 gap-2 mt-3">
-            <button
-              type="button"
-              onClick={handleSaveCurrentFoodToLibrary}
-              className="rounded-xl py-2 text-sm font-medium"
-              style={{ background: palette.foodAccentSoft, color: palette.foodAccent, border: `1px solid ${palette.border}` }}
-            >
-              שמור לספר מוצרים
-            </button>
-            <button
-              type="button"
-              onClick={clearFoodPhotoState}
-              className="rounded-xl py-2 text-sm font-medium"
-              style={{ background: palette.bg, color: palette.mutedInk, border: `1px solid ${palette.border}` }}
-            >
-              נקה תמונה
-            </button>
-          </div>
-        )}
-        {photoAnalyzeError && (
-          <p className="text-[11px] rounded-xl px-3 py-2 mt-3" style={{ background: palette.weightAccentSoft, color: palette.danger }}>
-            {photoAnalyzeError}
-          </p>
-        )}
-        {librarySaveStatus && (
-          <p className="text-[11px] rounded-xl px-3 py-2 mt-3" style={{ background: palette.foodAccentSoft, color: librarySaveStatus.includes("צריך") ? palette.danger : palette.foodAccent }}>
-            {librarySaveStatus}
-          </p>
-        )}
-        <p className="text-[10px] mt-2 flex items-center gap-1" style={{ color: palette.mutedInk }}>
-          <ImageIcon size={12} /> הערכה מתמונה היא משוערת. אחרי הזיהוי אפשר לתקן גרמים/ערכים ידנית.
-        </p>
-      
-          </>
-        )}
-      </Card>
-
-
-
-
-        </>
-      )}
-
-      {nutritionSubTab === "templates" && (
-        <>
-
-
-          <Card>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium">ספר מוצרים</p>
-                <p className="text-[11px] mt-1" style={{ color: palette.mutedInk }}>
-                  כל מוצר שתשמור כאן יופיע בהשלמה האוטומטית ובהוספת ארוחה רגילה.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowLibraryModal(true)}
-                className="rounded-xl px-3 py-2 text-sm font-medium"
-                style={{ background: palette.foodAccent, color: "#fff" }}
-              >
-                פתח ספר
-              </button>
-            </div>
-          </Card>
         </>
       )}
 
@@ -3186,7 +2785,6 @@ function FoodView({
     </div>
   );
 }
-
 
 function NutritionWaterPanel({
   totalWater, waterPct, waterGoalReached,
