@@ -1397,7 +1397,7 @@ export default function DayBoard() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm hero-date">{formatHebrewDate()}</p>
-              <h1 className="font-display text-3xl mt-1 hero-title">תכנון יומי</h1>
+              <h1 className="font-display text-3xl mt-1 hero-title">{(tab === "dashboard" || tab === "tasks") ? "תכנון יומי" : tabMeta[tab]?.label}</h1>
             </div>
             <div className="hero-pill">
               <span className="hero-dot" />
@@ -2237,123 +2237,7 @@ function FoodView({
 
   return (
     <div>
-      <Card>
-        <p className="text-xs mb-2" style={{ color: palette.mutedInk }}>סיכום היום</p>
-        <div className="flex gap-1.5">
-          <StatChip label="קלוריות" value={`${Math.round(totals.calories)} / ${dailyCalorieGoal}`} accent={palette.foodAccent} soft={palette.foodAccentSoft} />
-          <StatChip label='חלבון (ג)' value={Math.round(totals.protein)} accent={palette.foodAccent} soft={palette.foodAccentSoft} />
-          <StatChip label='שומן (ג)' value={Math.round(totals.fat)} accent={palette.foodAccent} soft={palette.foodAccentSoft} />
-        </div>
-        <div className="mt-3">
-          <div className="flex items-center justify-between text-[11px] mb-1" style={{ color: palette.mutedInk }}>
-            <span>אכלת {Math.round(totals.calories)} מתוך {dailyCalorieGoal} קל׳</span>
-            <span style={{ color: caloriesLeft >= 0 ? palette.tasksAccent : palette.danger }}>
-              {caloriesLeft >= 0 ? `נשארו ${caloriesLeft}` : `חריגה ${Math.abs(caloriesLeft)}`} קל׳
-            </span>
-          </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: palette.foodAccentSoft }}>
-            <div className="h-full rounded-full transition-all" style={{ width: `${caloriePct}%`, background: palette.foodAccent }} />
-          </div>
-        </div>
-        {!isEditingCalorieGoal ? (
-          <div className="mt-3 flex items-center justify-between rounded-xl px-3 py-2" style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
-            <span className="text-sm" style={{ color: palette.mutedInk }}>יעד יומי</span>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold" style={{ color: palette.foodAccent }}>{dailyCalorieGoal} קל׳</span>
-              <button
-                onClick={() => {
-                  setCalorieGoalInput(String(dailyCalorieGoal));
-                  setIsEditingCalorieGoal(true);
-                }}
-                className="rounded-lg p-1.5"
-                style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}
-                title="עריכת יעד קלוריות"
-              >
-                <Pencil size={14} />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="mt-3 flex gap-2">
-            <input
-              value={calorieGoalInput}
-              onChange={(e) => setCalorieGoalInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && saveDailyCalorieGoal()}
-              placeholder="יעד קלוריות יומי"
-              inputMode="numeric"
-              type="number"
-              className="flex-1 rounded-xl px-3 py-2 outline-none text-sm"
-              style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
-              autoFocus
-            />
-            <button onClick={saveDailyCalorieGoal} className="rounded-xl px-3 text-sm font-medium" style={{ background: palette.foodAccent, color: "#fff" }}>
-              שמור
-            </button>
-            <button
-              onClick={() => {
-                setCalorieGoalInput(String(dailyCalorieGoal));
-                setIsEditingCalorieGoal(false);
-              }}
-              className="rounded-xl px-3 text-sm font-medium"
-              style={{ background: palette.bg, color: palette.mutedInk, border: `1px solid ${palette.border}` }}
-            >
-              ביטול
-            </button>
-          </div>
-        )}
-      </Card>
-
-      <button
-        onClick={() => setShowLibraryModal(true)}
-        className="w-full rounded-2xl p-4 mb-4 flex items-center justify-between"
-        style={{ background: palette.surface, border: `1px solid ${palette.border}` }}
-      >
-        <span className="text-sm font-medium flex items-center gap-1.5">
-          <BookOpen size={16} style={{ color: palette.foodAccent }} /> ספר מוצרים
-          <span style={{ color: palette.mutedInk }} className="text-xs">
-            {savedFoods.length > 0 ? `(${savedFoods.length})` : ""}
-          </span>
-        </span>
-        <ChevronLeft size={18} style={{ color: palette.mutedInk }} />
-      </button>
-
       
-      <Card>
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div>
-            <p className="text-sm font-medium">מרכז תזונה</p>
-            <p className="text-[11px] mt-0.5" style={{ color: palette.mutedInk }}>אוכל, שתייה, צילום, ברקוד, תוויות ותבניות — במקום אחד.</p>
-          </div>
-          <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>מסודר</span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { key: "log", label: "אוכל", icon: Utensils },
-            { key: "water", label: "שתייה", icon: Droplets },
-            { key: "tools", label: "צילום וסריקות", icon: Camera },
-            { key: "templates", label: "תבניות וספר", icon: BookOpen },
-          ].map((item) => {
-            const Icon = item.icon;
-            const active = nutritionSubTab === item.key;
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setNutritionSubTab(item.key)}
-                className="rounded-2xl px-3 py-2 text-sm font-medium flex items-center justify-center gap-1.5"
-                style={{
-                  background: active ? palette.foodAccent : palette.bg,
-                  color: active ? "#fff" : palette.ink,
-                  border: `1px solid ${active ? palette.foodAccent : palette.border}`,
-                }}
-              >
-                <Icon size={15} />
-                {item.label}
-              </button>
-            );
-          })}
-        </div>
-      </Card>
 
       {nutritionSubTab === "water" && (
         <NutritionWaterPanel
