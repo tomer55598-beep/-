@@ -1391,37 +1391,37 @@ export default function DayBoard() {
         input::placeholder { color: #B7AE9C; }
       `}</style>
       {/* header */}
-      {(tab === "dashboard" || tab === "tasks") && (
-<header className="px-5 pt-6 pb-4 max-w-xl mx-auto app-header">
-        <div className="hero-card">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm hero-date">{formatHebrewDate()}</p>
-              <h1 className="font-display text-3xl mt-1 hero-title">{(tab === "dashboard" || tab === "tasks") ? "תכנון יומי" : tabMeta[tab]?.label}</h1>
+      {(tab === "dashboard" || tab === "tasks") ? (
+        <header className="px-5 pt-6 pb-4 max-w-xl mx-auto app-header">
+          <div className="hero-card">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm hero-date">{formatHebrewDate()}</p>
+                <h1 className="font-display text-3xl mt-1 hero-title">תכנון יומי</h1>
+              </div>
+              <div className="hero-pill">
+                <span className="hero-dot" />
+                היום
+              </div>
             </div>
-            <div className="hero-pill">
-              <span className="hero-dot" />
-              היום
-            </div>
-          </div>
 
-          <div className="hero-stats">
-            <div className="hero-stat">
-              <span>{openTasksCount}</span>
-              <small>משימות פתוחות</small>
-            </div>
-            <div className="hero-stat">
-              <span>{todayCalories}</span>
-              <small>מתוך {dailyCalorieGoal} קל׳</small>
-            </div>
-            <div className="hero-stat">
-              <span>{waterLiters} ל׳</span>
-              <small>מתוך {(dailyWaterGoal / 1000).toFixed(1)} ל׳</small>
+            <div className="hero-stats">
+              <div className="hero-stat">
+                <span>{openTasksCount}</span>
+                <small>משימות פתוחות</small>
+              </div>
+              <div className="hero-stat">
+                <span>{todayCalories}</span>
+                <small>מתוך {dailyCalorieGoal} קל׳</small>
+              </div>
+              <div className="hero-stat">
+                <span>{waterLiters} ל׳</span>
+                <small>מתוך {(dailyWaterGoal / 1000).toFixed(1)} ל׳</small>
+              </div>
             </div>
           </div>
-        </div>
-      </header>
-      )}
+        </header>
+      ) : null}
 
 
       <main className="px-5 max-w-xl mx-auto app-main">
