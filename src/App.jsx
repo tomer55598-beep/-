@@ -2070,10 +2070,13 @@ function FoodView({
   const [labelPreview, setLabelPreview] = useState("");
   const [labelStatus, setLabelStatus] = useState("");
   const [isAnalyzingLabel, setIsAnalyzingLabel] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
   const [selectedFoodImage, setSelectedFoodImage] = useState("");
   const [librarySaveStatus, setLibrarySaveStatus] = useState("");
   const [showBarcodeTools, setShowBarcodeTools] = useState(false);
   const [showPhotoTools, setShowPhotoTools] = useState(false);
+  const [editingFoodId, setEditingFoodId] = useState(null);
+  const [editingFoodForm, setEditingFoodForm] = useState({ name: "", grams: "", calories: "", protein: "", fat: "" });
 
   const applyScannedNutritionToForm = (raw) => {
     const normalized = normalizeScannedNutrition(raw);
@@ -2141,6 +2144,16 @@ function FoodView({
       }
       if (!barcode) throw new Error("לא זוהה ברקוד ברור. נסה לצלם מקרוב או להזין ידנית.");
       const product = await lookupBarcode(barcode);
+      setScanResult({
+        source: "barcode",
+        name: product?.name || barcode,
+        grams: product?.grams || product?.servingGrams || 100,
+        calories: product?.calories ?? product?.caloriesPerServing ?? "",
+        protein: product?.protein ?? product?.proteinPerServing ?? "",
+        fat: product?.fat ?? product?.fatPerServing ?? "",
+        imageData,
+        note: "נמצא לפי ברקוד",
+      });
       setBarcodeStatus(`נמצא: ${product.name || barcode}`);
     } catch (err) {
       setBarcodeStatus(err?.message || "סריקת הברקוד נכשלה");
@@ -2164,6 +2177,17 @@ function FoodView({
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || "לא הצלחתי לקרוא את התווית");
       applyScannedNutritionToForm(data);
+      const normalizedLabel = normalizeScannedNutrition(data);
+      setScanResult({
+        source: "label",
+        name: normalizedLabel?.name || data?.name || "מוצר מתווית",
+        grams: normalizedLabel?.grams || data?.grams || 100,
+        calories: normalizedLabel?.calories ?? data?.calories ?? "",
+        protein: normalizedLabel?.protein ?? data?.protein ?? "",
+        fat: normalizedLabel?.fat ?? data?.fat ?? "",
+        imageData,
+        note: "נקרא מתווית תזונתית",
+      });
       setLabelStatus("התווית נקראה ומילאה את הפרטים. אפשר לערוך לפני שמירה.");
     } catch (err) {
       setLabelStatus(err?.message || "קריאת התווית נכשלה");
@@ -2215,6 +2239,101 @@ function FoodView({
     foodForm.fat ? `${foodForm.fat} ג׳ שומן` : null,
   ].filter(Boolean).join(" · ");
 
+
+  const scanResultReady = Boolean(scanResult?.name);
+  const scanResultImage = scanResult?.imageData || labelPreview || barcodePreview || foodForm.imageData || "";
+  const scanResultNutrition = [
+    scanResult?.grams ? `${scanResult.grams} גרם` : null,
+    scanResult?.calories ? `${scanResult.calories} קל׳` : null,
+    scanResult?.protein ? `${scanResult.protein} ג׳ חלבון` : null,
+    scanResult?.fat ? `${scanResult.fat} ג׳ שומן` : null,
+  ].filter(Boolean).join(" · ");
+
+
+  const handleAddScanResultQuick = () => {
+    if (!scanResult?.name) return;
+    const nextForm = {
+      ...foodForm,
+      name: scanResult.name || foodForm.name,
+      grams: scanResult.grams || foodForm.grams || "100",
+      calories: scanResult.calories || foodForm.calories || "",
+      protein: scanResult.protein || foodForm.protein || "",
+      fat: scanResult.fat || foodForm.fat || "",
+      autoNote: scanResult.note || foodForm.autoNote || "נוסף מסריקה",
+      imageData: scanResult.imageData || foodForm.imageData || "",
+      imageSource: scanResult.source || foodForm.imageSource || "scan",
+    };
+
+    setFoodForm(nextForm);
+
+    const entry = {
+      id: uid(),
+      name: nextForm.name,
+      grams: nextForm.grams,
+      profileName: "סריקה",
+      category: "סריקה",
+      portionHint: null,
+      hasNutrition: Boolean(nextForm.calories || nextForm.protein || nextForm.fat),
+      calories: numberFromInput(nextForm.calories) || null,
+      protein: numberFromInput(nextForm.protein) || null,
+      fat: numberFromInput(nextForm.fat) || null,
+      estimateNote: nextForm.autoNote,
+      imageData: nextForm.imageData || null,
+      imageSource: nextForm.imageSource || null,
+      time: new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }),
+    };
+
+    persistFood([...foodEntries, entry]);
+    setScanResult(null);
+    setBarcodeStatus("");
+    setLabelStatus("");
+  };
+
+
+  const startEditFoodEntry = (entry) => {
+    setEditingFoodId(entry.id);
+    setEditingFoodForm({
+      name: entry.name || "",
+      grams: entry.grams || "",
+      calories: entry.calories ?? "",
+      protein: entry.protein ?? "",
+      fat: entry.fat ?? "",
+    });
+  };
+
+  const cancelEditFoodEntry = () => {
+    setEditingFoodId(null);
+    setEditingFoodForm({ name: "", grams: "", calories: "", protein: "", fat: "" });
+  };
+
+  const saveEditFoodEntry = (id) => {
+    const nextName = String(editingFoodForm.name || "").trim();
+    if (!nextName) return;
+
+    const nextEntries = foodEntries.map((entry) => {
+      if (entry.id !== id) return entry;
+
+      const calories = numberFromInput(editingFoodForm.calories);
+      const protein = numberFromInput(editingFoodForm.protein);
+      const fat = numberFromInput(editingFoodForm.fat);
+      const grams = String(editingFoodForm.grams || "").trim();
+
+      return {
+        ...entry,
+        name: nextName,
+        grams,
+        calories: calories || null,
+        protein: protein || null,
+        fat: fat || null,
+        hasNutrition: Boolean(calories || protein || fat),
+        estimateNote: "נערך ידנית",
+      };
+    });
+
+    persistFood(nextEntries);
+    cancelEditFoodEntry();
+  };
+
   return (
     <div>
 
@@ -2235,6 +2354,60 @@ function FoodView({
           <MiniInsight label="קלוריות" value={`${Math.round(totals.calories)}`} />
           <MiniInsight label="חלבון" value={`${roundOne(totals.protein)} ג׳`} />
           <MiniInsight label="שומן" value={`${roundOne(totals.fat)} ג׳`} />
+        </div>
+
+        <div className="mt-3 rounded-xl px-3 py-2" style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
+          {!isEditingCalorieGoal ? (
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-[11px]" style={{ color: palette.mutedInk }}>יעד קלוריות יומי</p>
+                <p className="text-sm font-semibold" style={{ color: palette.foodAccent }}>{dailyCalorieGoal} קל׳</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setCalorieGoalInput(String(dailyCalorieGoal));
+                  setIsEditingCalorieGoal(true);
+                }}
+                className="rounded-lg p-1.5"
+                style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}
+                title="עריכת יעד קלוריות"
+              >
+                <Pencil size={15} />
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-[1fr_auto_auto] gap-2">
+              <input
+                value={calorieGoalInput}
+                onChange={(e) => setCalorieGoalInput(e.target.value)}
+                placeholder="יעד קלוריות"
+                inputMode="numeric"
+                type="number"
+                className="rounded-xl px-3 py-2 outline-none min-w-0"
+                style={{ background: palette.surface, border: `1px solid ${palette.border}` }}
+              />
+              <button
+                type="button"
+                onClick={saveDailyCalorieGoal}
+                className="rounded-xl px-3 text-sm font-medium"
+                style={{ background: palette.foodAccent, color: "#fff" }}
+              >
+                שמור
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCalorieGoalInput(String(dailyCalorieGoal));
+                  setIsEditingCalorieGoal(false);
+                }}
+                className="rounded-xl px-3 text-sm font-medium"
+                style={{ background: palette.surface, color: palette.mutedInk, border: `1px solid ${palette.border}` }}
+              >
+                ביטול
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="h-2 rounded-full overflow-hidden mt-3" style={{ background: palette.foodAccentSoft }}>
@@ -2401,55 +2574,147 @@ function FoodView({
       ) : (
         <div className="space-y-2">
           {foodEntries.map((f) => (
-            <div key={f.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 list-row" style={{ background: palette.surface, border: `1px solid ${palette.border}` }}>
-              {f.imageData ? (
-                <button
-                  type="button"
-                  onClick={() => setSelectedFoodImage(f.imageData)}
-                  className="food-entry-photo"
-                  style={{
-                    width: "56px",
-                    height: "56px",
-                    minWidth: "56px",
-                    maxWidth: "56px",
-                    minHeight: "56px",
-                    maxHeight: "56px",
-                    flex: "0 0 56px",
-                    borderRadius: "14px",
-                    overflow: "hidden",
-                    padding: 0,
-                    border: `1px solid ${palette.border}`,
-                    background: palette.bg,
-                    display: "block"
-                  }}
-                  title="פתח תמונה"
-                >
-                  <img
-                    src={f.imageData}
-                    alt={f.name}
-                    style={{
-                      width: "56px",
-                      height: "56px",
-                      maxWidth: "56px",
-                      maxHeight: "56px",
-                      objectFit: "cover",
-                      display: "block"
-                    }}
+            <div key={f.id} className="rounded-xl px-3 py-2.5 list-row" style={{ background: palette.surface, border: `1px solid ${palette.border}` }}>
+              {editingFoodId === f.id ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-medium" style={{ color: palette.foodAccent }}>עריכת מאכל</p>
+                    <button type="button" onClick={cancelEditFoodEntry} style={{ color: palette.mutedInk }}>
+                      <X size={16} />
+                    </button>
+                  </div>
+
+                  <input
+                    value={editingFoodForm.name}
+                    onChange={(e) => setEditingFoodForm({ ...editingFoodForm, name: e.target.value })}
+                    placeholder="שם המאכל"
+                    className="w-full rounded-xl px-3 py-2 outline-none"
+                    style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
                   />
-                </button>
-              ) : null}
-              <div className="flex-1">
-                <p className="text-sm font-medium">{f.name}</p>
-                {getFoodProfileLabel(f) && (
-                  <p className="text-[11px] mt-0.5" style={{ color: palette.foodAccent }}>{getFoodProfileLabel(f)}</p>
-                )}
-                <p className="text-[11px]" style={{ color: palette.mutedInk }}>
-                  {f.time}{f.grams ? ` · ${f.grams} גרם` : ""} · {formatFoodNutrition(f)}
-                </p>
-              </div>
-              <button onClick={() => deleteFood(f.id)} style={{ color: palette.mutedInk }}>
-                <X size={16} />
-              </button>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={editingFoodForm.grams}
+                      onChange={(e) => setEditingFoodForm({ ...editingFoodForm, grams: e.target.value })}
+                      placeholder="גרמים"
+                      type="number"
+                      inputMode="decimal"
+                      className="rounded-xl px-3 py-2 outline-none min-w-0"
+                      style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+                    />
+                    <input
+                      value={editingFoodForm.calories}
+                      onChange={(e) => setEditingFoodForm({ ...editingFoodForm, calories: e.target.value })}
+                      placeholder="קלוריות"
+                      type="number"
+                      inputMode="decimal"
+                      className="rounded-xl px-3 py-2 outline-none min-w-0"
+                      style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+                    />
+                    <input
+                      value={editingFoodForm.protein}
+                      onChange={(e) => setEditingFoodForm({ ...editingFoodForm, protein: e.target.value })}
+                      placeholder="חלבון"
+                      type="number"
+                      inputMode="decimal"
+                      className="rounded-xl px-3 py-2 outline-none min-w-0"
+                      style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+                    />
+                    <input
+                      value={editingFoodForm.fat}
+                      onChange={(e) => setEditingFoodForm({ ...editingFoodForm, fat: e.target.value })}
+                      placeholder="שומן"
+                      type="number"
+                      inputMode="decimal"
+                      className="rounded-xl px-3 py-2 outline-none min-w-0"
+                      style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => saveEditFoodEntry(f.id)}
+                      className="rounded-xl py-2 text-sm font-medium"
+                      style={{ background: palette.foodAccent, color: "#fff" }}
+                    >
+                      שמור שינויים
+                    </button>
+                    <button
+                      type="button"
+                      onClick={cancelEditFoodEntry}
+                      className="rounded-xl py-2 text-sm font-medium"
+                      style={{ background: palette.bg, color: palette.mutedInk, border: `1px solid ${palette.border}` }}
+                    >
+                      ביטול
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3">
+                  {f.imageData ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFoodImage(f.imageData)}
+                      className="food-entry-photo"
+                      style={{
+                        width: "56px",
+                        height: "56px",
+                        minWidth: "56px",
+                        maxWidth: "56px",
+                        minHeight: "56px",
+                        maxHeight: "56px",
+                        flex: "0 0 56px",
+                        borderRadius: "14px",
+                        overflow: "hidden",
+                        padding: 0,
+                        border: `1px solid ${palette.border}`,
+                        background: palette.bg,
+                        display: "block"
+                      }}
+                      title="פתח תמונה"
+                    >
+                      <img
+                        src={f.imageData}
+                        alt={f.name}
+                        style={{
+                          width: "56px",
+                          height: "56px",
+                          maxWidth: "56px",
+                          maxHeight: "56px",
+                          objectFit: "cover",
+                          display: "block"
+                        }}
+                      />
+                    </button>
+                  ) : null}
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{f.name}</p>
+                    {getFoodProfileLabel(f) && (
+                      <p className="text-[11px] mt-0.5" style={{ color: palette.foodAccent }}>{getFoodProfileLabel(f)}</p>
+                    )}
+                    <p className="text-[11px]" style={{ color: palette.mutedInk }}>
+                      {f.time}{f.grams ? ` · ${f.grams} גרם` : ""} · {formatFoodNutrition(f)}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => startEditFoodEntry(f)}
+                      className="rounded-lg p-1.5"
+                      style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}
+                      title="עריכת מאכל"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button onClick={() => deleteFood(f.id)} style={{ color: palette.mutedInk }} title="מחיקה">
+                      <X size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -2726,6 +2991,74 @@ function FoodView({
           </>
         )}
       </Card>
+
+          {scanResultReady && (
+            <Card>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  {scanResultImage && (
+                    <div
+                      style={{
+                        width: "52px",
+                        height: "52px",
+                        minWidth: "52px",
+                        maxWidth: "52px",
+                        borderRadius: "14px",
+                        overflow: "hidden",
+                        border: `1px solid ${palette.border}`,
+                        background: palette.bg,
+                        flexShrink: 0
+                      }}
+                    >
+                      <img
+                        src={scanResultImage}
+                        alt={scanResult?.name || foodForm.name || "מוצר"}
+                        style={{
+                          width: "52px",
+                          height: "52px",
+                          maxWidth: "52px",
+                          maxHeight: "52px",
+                          objectFit: "cover",
+                          display: "block"
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate" style={{ color: palette.ink }}>
+                      {scanResult?.name || foodForm.name}
+                    </p>
+                    <p className="text-[11px] mt-0.5 leading-5" style={{ color: palette.mutedInk }}>
+                      {scanResultNutrition || "מוצר זוהה — אפשר להוסיף מהר או לערוך תחת אוכל."}
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddScanResultQuick}
+                  className="rounded-xl px-3 py-2 text-sm font-medium flex-shrink-0"
+                  style={{ background: palette.foodAccent, color: "#fff" }}
+                >
+                  הוסף מהר
+                </button>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 mt-3">
+                <MiniInsight label="גרם" value={scanResult?.grams || foodForm.grams || "—"} />
+                <MiniInsight label="קל׳" value={scanResult?.calories || foodForm.calories || "—"} />
+                <MiniInsight label="חלבון" value={(scanResult?.protein || foodForm.protein) ? `${scanResult?.protein || foodForm.protein} ג׳` : "—"} />
+                <MiniInsight label="שומן" value={(scanResult?.fat || foodForm.fat) ? `${scanResult?.fat || foodForm.fat} ג׳` : "—"} />
+              </div>
+
+              <p className="text-[10px] mt-2" style={{ color: palette.mutedInk }}>
+                הכפתור מוסיף את המוצר מיד לתיעוד. אפשר לערוך אחר כך תחת “אוכל” אם צריך.
+              </p>
+            </Card>
+          )}
+
+
         </>
       )}
 
