@@ -483,3 +483,72 @@ input[type="file"] {
 }
 
 /* Photo result row uses inline sizing for iPhone/Safari stability. */
+
+
+/* Water goal mini celebration */
+.water-party-card {
+  box-shadow: 0 10px 30px rgba(196, 109, 54, 0.10);
+  animation: waterPartyPop 0.45s ease-out;
+}
+
+.water-party-icon {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 999px;
+  background: rgba(196, 109, 54, 0.12);
+  color: #C46D36;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: waterPartyPulse 1.8s ease-in-out infinite;
+}
+
+.water-party-badge {
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: rgba(196, 109, 54, 0.12);
+  color: #C46D36;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.water-party-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.water-party-confetti span {
+  position: absolute;
+  font-size: 16px;
+  opacity: 0.95;
+  animation: confettiFloat 3.2s ease-in-out infinite;
+}
+
+.water-party-confetti span:nth-child(1) { top: 8px; right: 18px; animation-delay: 0s; }
+.water-party-confetti span:nth-child(2) { top: 14px; right: 80px; animation-delay: 0.2s; }
+.water-party-confetti span:nth-child(3) { top: 12px; left: 24px; animation-delay: 0.45s; }
+.water-party-confetti span:nth-child(4) { bottom: 12px; right: 26px; animation-delay: 0.7s; }
+.water-party-confetti span:nth-child(5) { bottom: 8px; left: 48px; animation-delay: 0.9s; }
+.water-party-confetti span:nth-child(6) { top: 38px; left: 14px; animation-delay: 1.15s; }
+.water-party-confetti span:nth-child(7) { bottom: 18px; left: 120px; animation-delay: 1.35s; }
+.water-party-confetti span:nth-child(8) { top: 30px; right: 150px; animation-delay: 1.55s; }
+
+@keyframes waterPartyPop {
+  0% { transform: scale(0.98); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes waterPartyPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+@keyframes confettiFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  25% { transform: translateY(-5px) rotate(-8deg); }
+  50% { transform: translateY(3px) rotate(8deg); }
+  75% { transform: translateY(-4px) rotate(-5deg); }
+}

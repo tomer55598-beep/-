@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import {CheckSquare, Square, Trash2, Plus, Utensils, Droplets, ListTodo, X, RotateCcw, Calendar, Scale, ArrowUp, ArrowDown, Minus, BookOpen, ChevronLeft, ChevronDown, ChevronUp, History, Pencil, Camera, Image as ImageIcon, Loader2, Home, BarChart3, Activity, Target, Trophy, Flame, TrendingUp, TrendingDown, Sparkles, Cookie, Coffee} from "lucide-react";
+import {CheckSquare, Square, Trash2, Plus, Utensils, Droplets, ListTodo, X, RotateCcw, Calendar, Scale, ArrowUp, ArrowDown, Minus, BookOpen, ChevronLeft, ChevronDown, ChevronUp, History, Pencil, Camera, Image as ImageIcon, Loader2, Home, BarChart3, Activity, Target, Trophy, Flame, TrendingUp, TrendingDown, Sparkles, Cookie, Coffee, PartyPopper} from "lucide-react";
 
 const DEFAULT_WATER_GOAL = 4000; // ml
 const DEFAULT_CALORIE_GOAL = 2200; // kcal
@@ -3225,6 +3225,54 @@ function FoodView({
   );
 }
 
+
+
+function WaterGoalCelebration({ totalWater, dailyWaterGoal }) {
+  const liters = (Number(totalWater || 0) / 1000).toFixed(1);
+  const target = (Number(dailyWaterGoal || 0) / 1000).toFixed(1);
+
+  return (
+    <div
+      className="water-party-card rounded-3xl p-4 mt-3"
+      style={{
+        background: "#FFF4E8",
+        border: "1px solid #F4D7BA",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <div className="water-party-confetti" aria-hidden="true">
+        <span>💧</span>
+        <span>✨</span>
+        <span>🎉</span>
+        <span>🫧</span>
+        <span>🥳</span>
+        <span>💦</span>
+        <span>✨</span>
+        <span>🎊</span>
+      </div>
+
+      <div className="flex items-start gap-3" style={{ position: "relative", zIndex: 1 }}>
+        <div className="water-party-icon">
+          <PartyPopper size={18} />
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-base font-semibold" style={{ color: "#C46D36" }}>
+              הגעת ליעד המים היומי! 🎉
+            </p>
+            <span className="water-party-badge">כל הכבוד</span>
+          </div>
+          <p className="text-sm mt-1" style={{ color: "#8C8374" }}>
+            שתית {liters} ל׳ מתוך יעד של {target} ל׳. מיני מסיבה מוצדקת בהחלט 💧
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function NutritionWaterPanel({
   totalWater, waterPct, waterGoalReached,
   dailyWaterGoal, waterGoalInput, setWaterGoalInput,
@@ -3309,6 +3357,9 @@ function NutritionWaterPanel({
           </div>
         )}
       </Card>
+
+      {waterGoalReached && <WaterGoalCelebration totalWater={totalWater} dailyWaterGoal={dailyWaterGoal} />}
+
 
       <Card>
         <p className="text-sm font-medium mb-3">הוספת שתייה</p>
