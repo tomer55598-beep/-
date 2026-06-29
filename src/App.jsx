@@ -3279,6 +3279,23 @@ function NutritionWaterPanel({
   isEditingWaterGoal, setIsEditingWaterGoal, saveDailyWaterGoal,
   addWater, customWater, setCustomWater, waterEntries, removeWaterEntry,
 }) {
+
+  const [showWaterParty, setShowWaterParty] = useState(false);
+
+  useEffect(() => {
+    if (!waterGoalReached) {
+      setShowWaterParty(false);
+      return undefined;
+    }
+
+    setShowWaterParty(true);
+    const timer = setTimeout(() => {
+      setShowWaterParty(false);
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [waterGoalReached]);
+
   return (
     <div>
       <Card>
@@ -3358,7 +3375,7 @@ function NutritionWaterPanel({
         )}
       </Card>
 
-      {waterGoalReached && <WaterGoalCelebration totalWater={totalWater} dailyWaterGoal={dailyWaterGoal} />}
+      {showWaterParty && <WaterGoalCelebration totalWater={totalWater} dailyWaterGoal={dailyWaterGoal} />}
 
 
       <Card>
