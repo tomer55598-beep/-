@@ -2264,42 +2264,7 @@ function FoodView({
       {nutritionSubTab === "log" && (
         <>
 
-      <Card>
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div>
-            <p className="text-sm font-medium">מרכז תזונה</p>
-            <p className="text-[11px] mt-0.5" style={{ color: palette.mutedInk }}>אוכל, שתייה, צילום, ברקוד, תוויות ותבניות — במקום אחד.</p>
-          </div>
-          <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>מסודר</span>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          {[
-            { key: "log", label: "אוכל", icon: Utensils },
-            { key: "water", label: "שתייה", icon: Droplets },
-            { key: "tools", label: "צילום וסריקות", icon: Camera },
-            { key: "templates", label: "תבניות וספר", icon: BookOpen },
-          ].map((item) => {
-            const Icon = item.icon;
-            const active = nutritionSubTab === item.key;
-            return (
-              <button
-                key={item.key}
-                type="button"
-                onClick={() => setNutritionSubTab(item.key)}
-                className="rounded-2xl px-3 py-2 text-sm font-medium flex items-center justify-center gap-1.5"
-                style={{
-                  background: active ? palette.foodAccent : palette.bg,
-                  color: active ? "#fff" : palette.ink,
-                  border: `1px solid ${active ? palette.foodAccent : palette.border}`,
-                }}
-              >
-                <Icon size={15} />
-                {item.label}
-              </button>
-            );
-          })}
-        </div>
-      </Card>
+      
 
       {nutritionSubTab === "water" && (
         <NutritionWaterPanel
@@ -2422,6 +2387,47 @@ function FoodView({
           </div>
         </div>
       </Card>
+
+      <Card>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div>
+            <p className="text-sm font-medium">מרכז תזונה</p>
+            <p className="text-[11px] mt-0.5" style={{ color: palette.mutedInk }}>
+              בחר תת־קטגוריה. התפריט נשאר קבוע כדי שיהיה קל לעבור בין אוכל, שתייה, צילום ותבניות.
+            </p>
+          </div>
+          <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>תפריט</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { key: "log", label: "אוכל", icon: Utensils },
+            { key: "water", label: "שתייה", icon: Droplets },
+            { key: "tools", label: "צילום וסריקות", icon: Camera },
+            { key: "templates", label: "תבניות וספר", icon: BookOpen },
+          ].map((item) => {
+            const Icon = item.icon;
+            const active = nutritionSubTab === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setNutritionSubTab(item.key)}
+                className="rounded-2xl px-3 py-2 text-sm font-medium flex items-center justify-center gap-1.5"
+                style={{
+                  background: active ? palette.foodAccent : palette.bg,
+                  color: active ? "#fff" : palette.ink,
+                  border: `1px solid ${active ? palette.foodAccent : palette.border}`,
+                }}
+              >
+                <Icon size={15} />
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
 
       
 
