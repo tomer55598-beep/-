@@ -911,6 +911,7 @@ export default function DayBoard() {
 
   const [foodEntries, setFoodEntries] = useState([]);
   const [foodForm, setFoodForm] = useState({ name: "", grams: "", calories: "", protein: "", fat: "", autoNote: "", imageData: "", imageSource: "" });
+  const [nutritionSubTab, setNutritionSubTab] = useState("log");
   const [savedFoods, setSavedFoods] = useState([]);
   const [showLibraryModal, setShowLibraryModal] = useState(false);
   const [showLibraryForm, setShowLibraryForm] = useState(false);
@@ -1369,7 +1370,6 @@ export default function DayBoard() {
     dashboard: { label: "בית", icon: Home, accent: palette.foodAccent },
     tasks: { label: "משימות", icon: ListTodo, accent: palette.tasksAccent },
     food: { label: "תזונה", icon: Utensils, accent: palette.foodAccent },
-    water: { label: "מים", icon: Droplets, accent: palette.waterAccent },
     weight: { label: "משקל", icon: Scale, accent: palette.weightAccent },
     history: { label: "היסטוריה", icon: History, accent: palette.weightAccent },
   };
@@ -1484,13 +1484,8 @@ export default function DayBoard() {
             templateSearch={templateSearch}
             setTemplateSearch={setTemplateSearch}
             logMealTemplate={logMealTemplate}
-            showLibraryModal={showLibraryModal}
-            setShowLibraryModal={setShowLibraryModal}
-          />
-        )}
-
-        {tab === "water" && (
-          <WaterView
+            nutritionSubTab={nutritionSubTab}
+            setNutritionSubTab={setNutritionSubTab}
             totalWater={totalWater}
             waterPct={waterPct}
             waterGoalReached={waterGoalReached}
@@ -1505,6 +1500,8 @@ export default function DayBoard() {
             setCustomWater={setCustomWater}
             waterEntries={waterEntries}
             removeWaterEntry={removeWaterEntry}
+            showLibraryModal={showLibraryModal}
+            setShowLibraryModal={setShowLibraryModal}
           />
         )}
 
@@ -1649,7 +1646,7 @@ function DashboardView({ tasks, foodTotals, dailyCalorieGoal, totalWater, dailyW
         </div>
         <div className="grid grid-cols-2 gap-2 mt-4">
           <DashboardMetric icon={Flame} label="קלוריות" value={`${Math.round(foodTotals.calories)} / ${dailyCalorieGoal}`} sub={caloriesLeft >= 0 ? `נשארו ${caloriesLeft}` : `חריגה ${Math.abs(caloriesLeft)}`} pct={caloriePct} accent={palette.foodAccent} onClick={() => setTab("food")} />
-          <DashboardMetric icon={Droplets} label="מים" value={`${(totalWater / 1000).toFixed(1)} / ${(dailyWaterGoal / 1000).toFixed(1)} ל׳`} sub={waterLeft ? `נשאר ${(waterLeft / 1000).toFixed(1)} ל׳` : "יעד הושלם"} pct={waterPct} accent={palette.waterAccent} onClick={() => setTab("water")} />
+          <DashboardMetric icon={Droplets} label="מים" value={`${(totalWater / 1000).toFixed(1)} / ${(dailyWaterGoal / 1000).toFixed(1)} ל׳`} sub={waterLeft ? `נשאר ${(waterLeft / 1000).toFixed(1)} ל׳` : "יעד הושלם"} pct={waterPct} accent={palette.waterAccent} onClick={() => setTab("food")} />
           <DashboardMetric icon={ListTodo} label="משימות" value={taskStats.open} sub={taskStats.high ? `${taskStats.high} דחופות` : `${taskStats.done} בוצעו`} pct={taskStats.completionPct} accent={palette.tasksAccent} onClick={() => setTab("tasks")} />
           <DashboardMetric icon={Scale} label="משקל" value={weightStats.latest ? formatKg(weightStats.latest.weight) : "—"} sub={weightStats.changeFromPrev === null ? "אין מגמה" : `${weightStats.changeFromPrev > 0 ? "+" : ""}${weightStats.changeFromPrev} מהקודם`} pct={weightStats.bmi ? clampPct((weightStats.bmi.bmi / 40) * 100) : 0} accent={palette.weightAccent} onClick={() => setTab("weight")} />
         </div>
@@ -2083,6 +2080,11 @@ function FoodView({
   isEditingCalorieGoal, setIsEditingCalorieGoal, saveDailyCalorieGoal,
   savedFoods, saveCurrentFoodToLibrary,
   showTemplates, setShowTemplates, templateSearch, setTemplateSearch, logMealTemplate,
+  nutritionSubTab, setNutritionSubTab,
+  totalWater, waterPct, waterGoalReached,
+  dailyWaterGoal, waterGoalInput, setWaterGoalInput,
+  isEditingWaterGoal, setIsEditingWaterGoal, saveDailyWaterGoal,
+  addWater, customWater, setCustomWater, waterEntries, removeWaterEntry,
   showLibraryModal, setShowLibraryModal,
 }) {
   const [photoPreview, setPhotoPreview] = useState("");
@@ -2315,7 +2317,67 @@ function FoodView({
         <ChevronLeft size={18} style={{ color: palette.mutedInk }} />
       </button>
 
+      
       <Card>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div>
+            <p className="text-sm font-medium">מרכז תזונה</p>
+            <p className="text-[11px] mt-0.5" style={{ color: palette.mutedInk }}>אוכל, שתייה, צילום, ברקוד, תוויות ותבניות — במקום אחד.</p>
+          </div>
+          <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>מסודר</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { key: "log", label: "אוכל", icon: Utensils },
+            { key: "water", label: "שתייה", icon: Droplets },
+            { key: "tools", label: "צילום וסריקות", icon: Camera },
+            { key: "templates", label: "תבניות וספר", icon: BookOpen },
+          ].map((item) => {
+            const Icon = item.icon;
+            const active = nutritionSubTab === item.key;
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => setNutritionSubTab(item.key)}
+                className="rounded-2xl px-3 py-2 text-sm font-medium flex items-center justify-center gap-1.5"
+                style={{
+                  background: active ? palette.foodAccent : palette.bg,
+                  color: active ? "#fff" : palette.ink,
+                  border: `1px solid ${active ? palette.foodAccent : palette.border}`,
+                }}
+              >
+                <Icon size={15} />
+                {item.label}
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
+      {nutritionSubTab === "water" && (
+        <NutritionWaterPanel
+          totalWater={totalWater}
+          waterPct={waterPct}
+          waterGoalReached={waterGoalReached}
+          dailyWaterGoal={dailyWaterGoal}
+          waterGoalInput={waterGoalInput}
+          setWaterGoalInput={setWaterGoalInput}
+          isEditingWaterGoal={isEditingWaterGoal}
+          setIsEditingWaterGoal={setIsEditingWaterGoal}
+          saveDailyWaterGoal={saveDailyWaterGoal}
+          addWater={addWater}
+          customWater={customWater}
+          setCustomWater={setCustomWater}
+          waterEntries={waterEntries}
+          removeWaterEntry={removeWaterEntry}
+        />
+      )}
+
+
+      {nutritionSubTab === "log" && (
+        <>
+<Card>
         <div className="flex items-center justify-between gap-2 mb-1">
           <p className="text-sm font-medium">הוספת אוכל</p>
           <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>מחשבון קלוריות אוטומטי</span>
@@ -2417,56 +2479,73 @@ function FoodView({
 
       
 
-      <Card>
-        <button
-          type="button"
-          onClick={() => setShowTemplates((v) => !v)}
-          className="w-full flex items-center justify-between gap-2"
-        >
-          <span className="text-sm font-medium flex items-center gap-1.5"><Sparkles size={16} style={{ color: palette.foodAccent }} /> תבניות מהירות</span>
-          <span className="flex items-center gap-2">
-            <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>חדש</span>
-            {showTemplates ? <ChevronUp size={18} style={{ color: palette.mutedInk }} /> : <ChevronDown size={18} style={{ color: palette.mutedInk }} />}
-          </span>
-        </button>
-        {showTemplates && (
-          <div className="mt-3">
-            <input
-              value={templateSearch}
-              onChange={(e) => setTemplateSearch(e.target.value)}
-              placeholder="חפש תבנית: עוגה, שווארמה, חלבון..."
-              className="w-full rounded-xl px-3 py-2 outline-none text-sm mb-3"
-              style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
-            />
-            <div className="grid grid-cols-1 gap-2">
-              {MEAL_TEMPLATES
-                .filter((t) => !templateSearch || normalizeFoodText(t.name + " " + t.category).includes(normalizeFoodText(templateSearch)))
-                .map((t) => (
-                <button
-                  key={t.name}
-                  type="button"
-                  onClick={() => logMealTemplate(t)}
-                  className="rounded-2xl p-3 text-right"
-                  style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{t.name}</p>
-                      <p className="text-[11px] mt-0.5" style={{ color: palette.foodAccent }}>תבנית · {t.category}</p>
-                    </div>
-                    <Plus size={17} style={{ color: palette.foodAccent }} />
-                  </div>
-                  <p className="text-[11px] mt-1" style={{ color: palette.mutedInk }}>
-                    {t.grams} גרם · {t.calories} קל׳ · {t.protein} ג חלבון · {t.fat} ג שומן
-                  </p>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </Card>
+      
 
-      <Card>
+{foodEntries.length === 0 ? (
+        <p className="text-sm text-center mt-6" style={{ color: palette.mutedInk }}>עדיין לא נרשם אוכל היום.</p>
+      ) : (
+        <div className="space-y-2">
+          {foodEntries.map((f) => (
+            <div key={f.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 list-row" style={{ background: palette.surface, border: `1px solid ${palette.border}` }}>
+              {f.imageData ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedFoodImage(f.imageData)}
+                  className="food-entry-photo"
+                  style={{
+                    width: "56px",
+                    height: "56px",
+                    minWidth: "56px",
+                    maxWidth: "56px",
+                    minHeight: "56px",
+                    maxHeight: "56px",
+                    flex: "0 0 56px",
+                    borderRadius: "14px",
+                    overflow: "hidden",
+                    padding: 0,
+                    border: `1px solid ${palette.border}`,
+                    background: palette.bg,
+                    display: "block"
+                  }}
+                  title="פתח תמונה"
+                >
+                  <img
+                    src={f.imageData}
+                    alt={f.name}
+                    style={{
+                      width: "56px",
+                      height: "56px",
+                      maxWidth: "56px",
+                      maxHeight: "56px",
+                      objectFit: "cover",
+                      display: "block"
+                    }}
+                  />
+                </button>
+              ) : null}
+              <div className="flex-1">
+                <p className="text-sm font-medium">{f.name}</p>
+                {getFoodProfileLabel(f) && (
+                  <p className="text-[11px] mt-0.5" style={{ color: palette.foodAccent }}>{getFoodProfileLabel(f)}</p>
+                )}
+                <p className="text-[11px]" style={{ color: palette.mutedInk }}>
+                  {f.time}{f.grams ? ` · ${f.grams} גרם` : ""} · {formatFoodNutrition(f)}
+                </p>
+              </div>
+              <button onClick={() => deleteFood(f.id)} style={{ color: palette.mutedInk }}>
+                <X size={16} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      
+        </>
+      )}
+
+      {nutritionSubTab === "tools" && (
+        <>
+<Card>
         <button
           type="button"
           onClick={() => setShowPhotoTools((v) => !v)}
@@ -2548,7 +2627,9 @@ function FoodView({
       
           </>
         )}
-      </Card><Card>
+      </Card>
+
+<Card>
         <button
           type="button"
           onClick={() => setShowBarcodeTools((v) => !v)}
@@ -2644,65 +2725,85 @@ function FoodView({
       
           </>
         )}
-      </Card>{foodEntries.length === 0 ? (
-        <p className="text-sm text-center mt-6" style={{ color: palette.mutedInk }}>עדיין לא נרשם אוכל היום.</p>
-      ) : (
-        <div className="space-y-2">
-          {foodEntries.map((f) => (
-            <div key={f.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 list-row" style={{ background: palette.surface, border: `1px solid ${palette.border}` }}>
-              {f.imageData ? (
+      </Card>
+        </>
+      )}
+
+      {nutritionSubTab === "templates" && (
+        <>
+<Card>
+        <button
+          type="button"
+          onClick={() => setShowTemplates((v) => !v)}
+          className="w-full flex items-center justify-between gap-2"
+        >
+          <span className="text-sm font-medium flex items-center gap-1.5"><Sparkles size={16} style={{ color: palette.foodAccent }} /> תבניות מהירות</span>
+          <span className="flex items-center gap-2">
+            <span className="text-[10px] rounded-full px-2 py-1" style={{ background: palette.foodAccentSoft, color: palette.foodAccent }}>חדש</span>
+            {showTemplates ? <ChevronUp size={18} style={{ color: palette.mutedInk }} /> : <ChevronDown size={18} style={{ color: palette.mutedInk }} />}
+          </span>
+        </button>
+        {showTemplates && (
+          <div className="mt-3">
+            <input
+              value={templateSearch}
+              onChange={(e) => setTemplateSearch(e.target.value)}
+              placeholder="חפש תבנית: עוגה, שווארמה, חלבון..."
+              className="w-full rounded-xl px-3 py-2 outline-none text-sm mb-3"
+              style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+            />
+            <div className="grid grid-cols-1 gap-2">
+              {MEAL_TEMPLATES
+                .filter((t) => !templateSearch || normalizeFoodText(t.name + " " + t.category).includes(normalizeFoodText(templateSearch)))
+                .map((t) => (
                 <button
+                  key={t.name}
                   type="button"
-                  onClick={() => setSelectedFoodImage(f.imageData)}
-                  className="food-entry-photo"
-                  style={{
-                    width: "56px",
-                    height: "56px",
-                    minWidth: "56px",
-                    maxWidth: "56px",
-                    minHeight: "56px",
-                    maxHeight: "56px",
-                    flex: "0 0 56px",
-                    borderRadius: "14px",
-                    overflow: "hidden",
-                    padding: 0,
-                    border: `1px solid ${palette.border}`,
-                    background: palette.bg,
-                    display: "block"
-                  }}
-                  title="פתח תמונה"
+                  onClick={() => logMealTemplate(t)}
+                  className="rounded-2xl p-3 text-right"
+                  style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
                 >
-                  <img
-                    src={f.imageData}
-                    alt={f.name}
-                    style={{
-                      width: "56px",
-                      height: "56px",
-                      maxWidth: "56px",
-                      maxHeight: "56px",
-                      objectFit: "cover",
-                      display: "block"
-                    }}
-                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{t.name}</p>
+                      <p className="text-[11px] mt-0.5" style={{ color: palette.foodAccent }}>תבנית · {t.category}</p>
+                    </div>
+                    <Plus size={17} style={{ color: palette.foodAccent }} />
+                  </div>
+                  <p className="text-[11px] mt-1" style={{ color: palette.mutedInk }}>
+                    {t.grams} גרם · {t.calories} קל׳ · {t.protein} ג חלבון · {t.fat} ג שומן
+                  </p>
                 </button>
-              ) : null}
-              <div className="flex-1">
-                <p className="text-sm font-medium">{f.name}</p>
-                {getFoodProfileLabel(f) && (
-                  <p className="text-[11px] mt-0.5" style={{ color: palette.foodAccent }}>{getFoodProfileLabel(f)}</p>
-                )}
-                <p className="text-[11px]" style={{ color: palette.mutedInk }}>
-                  {f.time}{f.grams ? ` · ${f.grams} גרם` : ""} · {formatFoodNutrition(f)}
+              ))}
+            </div>
+          </div>
+        )}
+      </Card>
+
+      
+
+          <Card>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium">ספר מוצרים</p>
+                <p className="text-[11px] mt-1" style={{ color: palette.mutedInk }}>
+                  כל מוצר שתשמור כאן יופיע בהשלמה האוטומטית ובהוספת ארוחה רגילה.
                 </p>
               </div>
-              <button onClick={() => deleteFood(f.id)} style={{ color: palette.mutedInk }}>
-                <X size={16} />
+              <button
+                type="button"
+                onClick={() => setShowLibraryModal(true)}
+                className="rounded-xl px-3 py-2 text-sm font-medium"
+                style={{ background: palette.foodAccent, color: "#fff" }}
+              >
+                פתח ספר
               </button>
             </div>
-          ))}
-        </div>
+          </Card>
+        </>
       )}
-      {selectedFoodImage && (
+
+{selectedFoodImage && (
         <div
           style={{
             position: "fixed",
@@ -2760,6 +2861,150 @@ function FoodView({
     </div>
   );
 }
+
+
+function NutritionWaterPanel({
+  totalWater, waterPct, waterGoalReached,
+  dailyWaterGoal, waterGoalInput, setWaterGoalInput,
+  isEditingWaterGoal, setIsEditingWaterGoal, saveDailyWaterGoal,
+  addWater, customWater, setCustomWater, waterEntries, removeWaterEntry,
+}) {
+  return (
+    <div>
+      <Card>
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs mb-1" style={{ color: palette.mutedInk }}>שתייה היום</p>
+            <div className="flex items-end gap-2">
+              <p className="text-4xl font-semibold" style={{ color: palette.waterAccent }}>{(totalWater / 1000).toFixed(2)}</p>
+              <span className="text-sm mb-1" style={{ color: palette.mutedInk }}>ליטר</span>
+            </div>
+          </div>
+          <div className="rounded-2xl p-3" style={{ background: palette.waterAccentSoft, color: palette.waterAccent }}>
+            <Droplets size={26} />
+          </div>
+        </div>
+
+        <div className="mt-3">
+          <div className="flex justify-between text-[11px] mb-1" style={{ color: palette.mutedInk }}>
+            <span>{waterGoalReached ? "הגעת ליעד" : "התקדמות ליעד"}</span>
+            <span>{waterPct}%</span>
+          </div>
+          <div className="h-2.5 rounded-full overflow-hidden" style={{ background: palette.waterAccentSoft }}>
+            <div className="h-full rounded-full transition-all" style={{ width: `${waterPct}%`, background: palette.waterAccent }} />
+          </div>
+        </div>
+
+        {!isEditingWaterGoal ? (
+          <div className="mt-3 flex items-center justify-between rounded-xl px-3 py-2" style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
+            <span className="text-sm" style={{ color: palette.mutedInk }}>יעד שתייה יומי</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold" style={{ color: palette.waterAccent }}>{(dailyWaterGoal / 1000).toFixed(1)} ל׳</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setWaterGoalInput(String(dailyWaterGoal));
+                  setIsEditingWaterGoal(true);
+                }}
+                className="rounded-lg p-1.5"
+                style={{ background: palette.waterAccentSoft, color: palette.waterAccent }}
+                title="עריכת יעד מים"
+              >
+                <Pencil size={15} />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-3 grid grid-cols-[1fr_auto_auto] gap-2">
+            <input
+              value={waterGoalInput}
+              onChange={(e) => setWaterGoalInput(e.target.value)}
+              placeholder="יעד מים במ״ל"
+              inputMode="numeric"
+              type="number"
+              className="rounded-xl px-3 py-2 outline-none min-w-0"
+              style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+            />
+            <button
+              type="button"
+              onClick={saveDailyWaterGoal}
+              className="rounded-xl px-3 text-sm font-medium"
+              style={{ background: palette.waterAccent, color: "#fff" }}
+            >
+              שמור
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setWaterGoalInput(String(dailyWaterGoal));
+                setIsEditingWaterGoal(false);
+              }}
+              className="rounded-xl px-3 text-sm font-medium"
+              style={{ background: palette.bg, color: palette.mutedInk, border: `1px solid ${palette.border}` }}
+            >
+              ביטול
+            </button>
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <p className="text-sm font-medium mb-3">הוספת שתייה</p>
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          {WATER_QUICK_ADDS.map((amount) => (
+            <button
+              key={amount}
+              onClick={() => addWater(amount)}
+              className="rounded-xl py-2 text-sm font-medium"
+              style={{ background: palette.waterAccentSoft, color: palette.waterAccent }}
+            >
+              +{amount}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            value={customWater}
+            onChange={(e) => setCustomWater(e.target.value)}
+            placeholder="כמות במ״ל"
+            type="number"
+            className="flex-1 rounded-xl px-3 py-2 outline-none min-w-0"
+            style={{ background: palette.bg, border: `1px solid ${palette.border}` }}
+          />
+          <button
+            onClick={() => addWater()}
+            className="rounded-xl px-4 flex items-center gap-1"
+            style={{ background: palette.waterAccent, color: "#fff" }}
+          >
+            <Plus size={17} /> הוסף
+          </button>
+        </div>
+      </Card>
+
+      <Card>
+        <p className="text-sm font-medium mb-3">תיעוד שתייה</p>
+        {waterEntries.length === 0 ? (
+          <p className="text-sm text-center py-3" style={{ color: palette.mutedInk }}>עדיין לא נרשמה שתייה היום.</p>
+        ) : (
+          <div className="space-y-2">
+            {waterEntries.map((w) => (
+              <div key={w.id} className="flex items-center gap-3 rounded-xl px-3 py-2 list-row" style={{ background: palette.bg, border: `1px solid ${palette.border}` }}>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">{w.amount} מ״ל</p>
+                  <p className="text-[11px]" style={{ color: palette.mutedInk }}>{w.time}</p>
+                </div>
+                <button onClick={() => removeWaterEntry(w.id)} style={{ color: palette.mutedInk }}>
+                  <X size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}
+
 
 function ProductLibraryModal({
   savedFoods, showLibraryForm, setShowLibraryForm, libraryForm, setLibraryForm,
