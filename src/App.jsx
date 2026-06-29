@@ -1390,9 +1390,9 @@ export default function DayBoard() {
         .ripple { animation: ripple 7s linear infinite; }
         input::placeholder { color: #B7AE9C; }
       `}</style>
-
       {/* header */}
-      <header className="px-5 pt-6 pb-4 max-w-xl mx-auto app-header">
+      {(tab === "dashboard" || tab === "tasks") && (
+<header className="px-5 pt-6 pb-4 max-w-xl mx-auto app-header">
         <div className="hero-card">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -1421,6 +1421,8 @@ export default function DayBoard() {
           </div>
         </div>
       </header>
+      )}
+
 
       <main className="px-5 max-w-xl mx-auto app-main">
         {tab === "dashboard" && (
