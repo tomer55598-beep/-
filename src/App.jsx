@@ -924,6 +924,8 @@ export default function DayBoard() {
   const [dailyWaterGoal, setDailyWaterGoal] = useState(DEFAULT_WATER_GOAL);
   const [waterGoalInput, setWaterGoalInput] = useState(String(DEFAULT_WATER_GOAL));
   const [isEditingWaterGoal, setIsEditingWaterGoal] = useState(false);
+  const [showWaterParty, setShowWaterParty] = useState(false);
+  const [waterPartyShownDate, setWaterPartyShownDate] = useState("");
 
   const [dailyCalorieGoal, setDailyCalorieGoal] = useState(DEFAULT_CALORIE_GOAL);
   const [calorieGoalInput, setCalorieGoalInput] = useState(String(DEFAULT_CALORIE_GOAL));
@@ -965,6 +967,7 @@ export default function DayBoard() {
       const savedWaterGoal = await loadKey("dailyWaterGoal", DEFAULT_WATER_GOAL);
       const savedCalorieGoal = await loadKey("dailyCalorieGoal", DEFAULT_CALORIE_GOAL);
       const savedHeight = await loadKey("userHeightCm", DEFAULT_USER_HEIGHT_CM);
+      const savedWaterPartyShownDate = await loadKey("waterPartyShownDate", "");
       let histDates = await loadKey("dailyHistoryDates", []);
       if ((f.length > 0 || w.length > 0) && !histDates.includes(dateKey)) {
         histDates = await addDateToHistory(dateKey);
@@ -975,6 +978,7 @@ export default function DayBoard() {
       setWaterEntries(w);
       setWeightEntries(wt);
       setSavedFoods(lib);
+      setWaterPartyShownDate(String(savedWaterPartyShownDate || ""));
       const cleanHeight = Math.round(numberFromInput(savedHeight) || DEFAULT_USER_HEIGHT_CM);
       setUserHeightCm(cleanHeight);
       setHeightInput(String(cleanHeight));
@@ -1323,9 +1327,24 @@ export default function DayBoard() {
   }, [refreshHistory]);
 
   const addWater = (amount) => {
-    if (!amount || amount <= 0) return;
-    const entry = { id: uid(), amount, time: new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) };
+    const cleanAmount = Math.round(numberFromInput(amount || customWater) || 0);
+    if (!cleanAmount || cleanAmount <= 0) return;
+
+    const currentTotal = waterEntries.reduce((sum, w) => sum + (Number(w.amount) || 0), 0);
+    const nextTotal = currentTotal + cleanAmount;
+    const today = dateKeyRef.current;
+    const crossedGoalNow = currentTotal < dailyWaterGoal && nextTotal >= dailyWaterGoal;
+    const shouldCelebrate = crossedGoalNow && waterPartyShownDate !== today;
+
+    const entry = { id: uid(), amount: cleanAmount, time: new Date().toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" }) };
     persistWater([...waterEntries, entry]);
+
+    if (shouldCelebrate) {
+      setWaterPartyShownDate(today);
+      saveKey("waterPartyShownDate", today);
+      setShowWaterParty(true);
+      setTimeout(() => setShowWaterParty(false), 10000);
+    }
   };
 
   const removeWaterEntry = (id) => {
@@ -1485,6 +1504,7 @@ export default function DayBoard() {
             totalWater={totalWater}
             waterPct={waterPct}
             waterGoalReached={waterGoalReached}
+            showWaterParty={showWaterParty}
             dailyWaterGoal={dailyWaterGoal}
             waterGoalInput={waterGoalInput}
             setWaterGoalInput={setWaterGoalInput}
@@ -2077,7 +2097,7 @@ function FoodView({
   savedFoods, saveCurrentFoodToLibrary,
   showTemplates, setShowTemplates, templateSearch, setTemplateSearch, logMealTemplate,
   nutritionSubTab, setNutritionSubTab,
-  totalWater, waterPct, waterGoalReached,
+  totalWater, waterPct, waterGoalReached, showWaterParty,
   dailyWaterGoal, waterGoalInput, setWaterGoalInput,
   isEditingWaterGoal, setIsEditingWaterGoal, saveDailyWaterGoal,
   addWater, customWater, setCustomWater, waterEntries, removeWaterEntry,
@@ -2757,6 +2777,7 @@ function FoodView({
           totalWater={totalWater}
           waterPct={waterPct}
           waterGoalReached={waterGoalReached}
+          showWaterParty={showWaterParty}
           dailyWaterGoal={dailyWaterGoal}
           waterGoalInput={waterGoalInput}
           setWaterGoalInput={setWaterGoalInput}
@@ -3274,29 +3295,12 @@ function WaterGoalCelebration({ totalWater, dailyWaterGoal }) {
 }
 
 function NutritionWaterPanel({
-  totalWater, waterPct, waterGoalReached,
+  totalWater, waterPct, waterGoalReached, showWaterParty,
   dailyWaterGoal, waterGoalInput, setWaterGoalInput,
   isEditingWaterGoal, setIsEditingWaterGoal, saveDailyWaterGoal,
   addWater, customWater, setCustomWater, waterEntries, removeWaterEntry,
 }) {
-
-  const [showWaterParty, setShowWaterParty] = useState(false);
-
-  useEffect(() => {
-    if (!waterGoalReached) {
-      setShowWaterParty(false);
-      return undefined;
-    }
-
-    setShowWaterParty(true);
-    const timer = setTimeout(() => {
-      setShowWaterParty(false);
-    }, 10000);
-
-    return () => clearTimeout(timer);
-  }, [waterGoalReached]);
-
-  return (
+return (
     <div>
       <Card>
         <div className="flex items-center justify-between gap-3">
